@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-import { env } from '@/env'
+import { getEnv } from '@/env'
 
 const STORAGE_KEY = 'mediconnect.auth'
 
@@ -34,10 +34,11 @@ function migratePersistedSession(targetRemember: boolean) {
 }
 
 let currentRemember = true
-let client: SupabaseClient = createSupabaseClient(currentRemember)
+let client: SupabaseClient | null = null
 
 function createSupabaseClient(remember: boolean): SupabaseClient {
-  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = getEnv()
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -48,8 +49,15 @@ function createSupabaseClient(remember: boolean): SupabaseClient {
   })
 }
 
-export function getSupabase(): SupabaseClient {
+function ensureClient(): SupabaseClient {
+  if (!client) {
+    client = createSupabaseClient(currentRemember)
+  }
   return client
+}
+
+export function getSupabase(): SupabaseClient {
+  return ensureClient()
 }
 
 export function setSessionPersistence(remember: boolean) {
@@ -61,6 +69,6 @@ export function setSessionPersistence(remember: boolean) {
 
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
-    return Reflect.get(client, prop, client)
+    return Reflect.get(ensureClient(), prop, ensureClient())
   },
 })

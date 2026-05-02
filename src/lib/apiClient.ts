@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { getEnv } from '@/env'
 import { getSupabase } from '@/lib/supabase'
 
 export interface ProblemDetails {
@@ -58,16 +58,17 @@ async function buildHeaders(
 ): Promise<Headers> {
   const headers = new Headers()
   if (hasBody) headers.set('Content-Type', 'application/json')
-  headers.set('apikey', env.SUPABASE_ANON_KEY)
+  const { SUPABASE_ANON_KEY } = getEnv()
+  headers.set('apikey', SUPABASE_ANON_KEY)
 
   if (!anonymous) {
     const {
       data: { session },
     } = await getSupabase().auth.getSession()
-    const token = session?.access_token ?? env.SUPABASE_ANON_KEY
+    const token = session?.access_token ?? SUPABASE_ANON_KEY
     headers.set('Authorization', `Bearer ${token}`)
   } else {
-    headers.set('Authorization', `Bearer ${env.SUPABASE_ANON_KEY}`)
+    headers.set('Authorization', `Bearer ${SUPABASE_ANON_KEY}`)
   }
 
   if (extra) {
@@ -148,7 +149,7 @@ async function rawRequest<T>({
   body,
   options = {},
 }: RawRequestArgs): Promise<RequestResult<T>> {
-  const url = path.startsWith('http') ? path : `${env.SUPABASE_URL}${path}`
+  const url = path.startsWith('http') ? path : `${getEnv().SUPABASE_URL}${path}`
   const hasBody = body !== undefined
   const headers = await buildHeaders(options.anonymous ?? false, options.headers, hasBody)
 

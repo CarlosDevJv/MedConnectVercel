@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { getEnv } from '@/env'
 import { ApiError, apiClient, parseContentRangeTotal } from '@/lib/apiClient'
 
 import type { ListPatientsParams, Patient, PatientList } from '@/features/patients/types'
@@ -24,7 +24,7 @@ export async function registerPatient(payload: RegisterPatientPayload) {
     '/functions/v1/register-patient',
     {
       ...payload,
-      redirect_url: `${env.APP_URL}/app`,
+      redirect_url: `${getEnv().APP_URL}/app`,
     },
     { anonymous: true }
   )
@@ -157,7 +157,7 @@ export async function createPatient(payload: CreatePatientPayload) {
     '/functions/v1/create-patient',
     {
       ...payload,
-      redirect_url: payload.redirect_url ?? `${env.APP_URL}/app`,
+      redirect_url: payload.redirect_url ?? `${getEnv().APP_URL}/app`,
     }
   )
 }

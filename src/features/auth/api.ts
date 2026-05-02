@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { getEnv } from '@/env'
 import { apiClient } from '@/lib/apiClient'
 import { getSupabase, setSessionPersistence } from '@/lib/supabase'
 import type { UserInfo } from '@/types/user'
@@ -31,7 +31,7 @@ export async function requestPasswordReset(email: string): Promise<ResetPassword
     '/functions/v1/request-password-reset',
     {
       email,
-      redirect_url: `${env.APP_URL}/reset-password`,
+      redirect_url: `${getEnv().APP_URL}/reset-password`,
     },
     { anonymous: true }
   )

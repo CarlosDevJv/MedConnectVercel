@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { getEnv } from '@/env'
 import { apiClient } from '@/lib/apiClient'
 import type { UserRole } from '@/types/user'
 
@@ -34,7 +34,7 @@ export async function inviteSecretaria(payload: InviteSecretariaPayload) {
   const body: CreateUserPayload = {
     ...payload,
     role: 'secretaria',
-    redirect_url: payload.redirect_url ?? `${env.APP_URL}/app`,
+    redirect_url: payload.redirect_url ?? `${getEnv().APP_URL}/app`,
   }
   return apiClient.post<InviteSecretariaResponse, CreateUserPayload>(
     '/functions/v1/create-user',
