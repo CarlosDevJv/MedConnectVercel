@@ -1,0 +1,169 @@
+@import 'tailwindcss';
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+
+@theme {
+  --color-background: #e8e6ef;
+  --color-surface: #ffffff;
+  --color-surface-sidebar: #f4f3f9;
+  --color-foreground: #1a1b21;
+  --color-muted: #ebe8f2;
+  --color-muted-foreground: #5c6170;
+  --color-border: #e0dce8;
+  --color-primary: #3f3f46;
+  --color-primary-foreground: #ffffff;
+  --color-accent: #a78bfa;
+  --color-accent-soft: #ede9fe;
+  --color-ring: #a78bfa;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-search-border: #d2c4f4;
+
+  /**
+   * Escala harmonizada ao accent (#a78bfa) para CTAs/links de destaque e rodapé —
+   * evita violeta divergente fora da identidade MediConnect.
+   */
+  --color-accent-ink: #4f3f86;
+  --color-accent-solid: #8370e5;
+  --color-accent-solid-hover: #7462d9;
+  --color-footer-bg: #232228;
+  --color-footer-muted: #a9a5b9;
+  --color-footer-divider: #35343f;
+
+  --shadow-card: 0 4px 24px rgba(22, 18, 40, 0.07);
+  --shadow-elevated: 0 12px 40px rgba(26, 20, 50, 0.09);
+
+  --radius-card: 18px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --font-display: 'Manrope', system-ui, sans-serif;
+  --font-sans: 'Manrope', system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.card-surface {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Dot pattern background */
+.dot-pattern {
+  background-image: radial-gradient(circle, #c8c9d0 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Transitions */
+* {
+  transition-property: color, background-color, border-color, outline-color, text-decoration-color,
+    fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.animate-fade-in-up-delay-1 {
+  animation: fadeInUp 0.4s ease 0.05s both;
+}
+.animate-fade-in-up-delay-2 {
+  animation: fadeInUp 0.4s ease 0.1s both;
+}
+.animate-fade-in-up-delay-3 {
+  animation: fadeInUp 0.4s ease 0.15s both;
+}
+.animate-fade-in-up-delay-4 {
+  animation: fadeInUp 0.4s ease 0.2s both;
+}
+.animate-fade-in-up-delay-5 {
+  animation: fadeInUp 0.4s ease 0.25s both;
+}
+
+@keyframes heroKenBurns {
+  from {
+    transform: scale(1) translateZ(0);
+  }
+  to {
+    transform: scale(1.06) translateZ(0);
+  }
+}
+
+.hero-ken-burns-motion {
+  animation: heroKenBurns 36s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-ken-burns-motion {
+    animation: none !important;
+    will-change: auto;
+  }
+}
+
+/* TipTap / laudos */
+.report-tiptap ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.report-tiptap ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #report-print-root,
+  #report-print-root * {
+    visibility: visible;
+  }
+  #report-print-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
