@@ -7,6 +7,7 @@ import {
   Headset,
   HelpCircle,
   LayoutDashboard,
+  ListOrdered,
   LogOut,
   Menu,
   MessageSquare,
@@ -21,6 +22,7 @@ import * as React from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { useOptionalInAppNotifications } from '@/app/notifications/InAppNotificationsContext'
 import { SupportChatDialog } from '@/app/components/SupportChatDialog'
 import { RolelessBanner } from '@/app/layouts/RolelessBanner'
 import { Button } from '@/components/ui/button'
@@ -39,6 +41,7 @@ import {
   SECRETARIA_MANAGEMENT_ROLES,
   SIDEBAR_DASHBOARD_FALLBACK_ROLES,
 } from '@/lib/roleGroups'
+import { AppointmentRemindersRunner } from '@/features/agenda/components/AppointmentRemindersRunner'
 import { cn } from '@/lib/cn'
 
 const SIDEBAR_STORAGE_KEY = 'mediconnect.sidebar'
@@ -51,6 +54,8 @@ const HEADER_ICON_BTN_CLASS =
 
 function HeaderIconActions({ onOpenSupportChat }: { onOpenSupportChat: () => void }) {
   const navigate = useNavigate()
+  const notifications = useOptionalInAppNotifications()
+
   return (
     <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
       <DropdownMenu.Root>
@@ -68,11 +73,40 @@ function HeaderIconActions({ onOpenSupportChat }: { onOpenSupportChat: () => voi
             <div className="border-b border-[var(--color-border)] px-3 py-2.5">
               <p className="text-sm font-semibold text-[var(--color-foreground)]">Notificações</p>
             </div>
-            <div className="px-3 py-4">
-              <p className="text-sm text-[var(--color-foreground)]">Nenhuma notificação nova.</p>
-              <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
-                Em breve: alertas do sistema e lembretes de agenda.
-              </p>
+            <div className="max-h-64 overflow-y-auto px-1 py-2">
+              {notifications?.items.length ? (
+                <>
+                  {notifications.items.map((n) => (
+                    <div
+                      key={n.id}
+                      className="border-b border-[var(--color-border)]/70 px-2 py-2 last:border-b-0"
+                    >
+                      <p className="text-sm font-medium text-[var(--color-foreground)]">{n.title}</p>
+                      {n.body ? (
+                        <p className="mt-0.5 text-xs leading-snug text-[var(--color-muted-foreground)]">
+                          {n.body}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-[var(--color-accent)] hover:underline"
+                    onClick={() => notifications.clear()}
+                  >
+                    Limpar lista
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="px-2 pb-1 text-sm text-[var(--color-foreground)]">
+                    Nenhuma notificação nova.
+                  </p>
+                  <p className="px-2 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
+                    Lembretes por SMS aparecem aqui quando enviados (app aberto).
+                  </p>
+                </>
+              )}
             </div>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
@@ -208,6 +242,13 @@ const NAV_ITEMS: NavItem[] = [
     roles: [...AGENDA_ROLES],
   },
   {
+    id: 'waitlist',
+    icon: ListOrdered,
+    label: 'Fila de espera',
+    to: '/app/fila-de-espera',
+    roles: [...AGENDA_ROLES],
+  },
+  {
     id: 'reports',
     icon: FileText,
     label: 'Relatórios',
@@ -295,6 +336,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-dvh bg-[var(--color-background)]">
+      <AppointmentRemindersRunner />
       <aside
         className={cn(
           'hidden sm:flex shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface-sidebar)] transition-[width] duration-200',

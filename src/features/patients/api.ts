@@ -72,6 +72,39 @@ export async function listPatients(params: ListPatientsParams = {}): Promise<Pat
   return { items: result.data, total }
 }
 
+/** Total de pacientes para KPIs — `limit=0` devolve só Content-Range (evita fallback `length===1`). */
+export async function countPatients(): Promise<number> {
+  const result = await apiClient.request<unknown[]>({
+    method: 'GET',
+    path: '/rest/v1/patients?select=id&limit=0',
+    options: { headers: { Prefer: 'count=exact' } },
+  })
+  const n = parseContentRangeTotal(result.headers)
+  if (n !== null) return n
+  const list = await listPatients({ page: 1, pageSize: 50000 })
+  return list.total
+}
+
+/** Pacientes em lote para lembretes (telefone + preferência). */
+export async function batchPatientContact(ids: string[]): Promise<
+  Record<string, { phone_mobile: string; preferred_contact: string | null }>
+> {
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (!unique.length) return {}
+  const usp = new URLSearchParams()
+  usp.set('select', 'id,phone_mobile,preferred_contact')
+  usp.set('id', `in.(${unique.join(',')})`)
+  const rows = await apiClient.get<
+    { id: string; phone_mobile: string; preferred_contact?: string | null }[]
+  >(`/rest/v1/patients?${usp.toString()}`)
+  return Object.fromEntries(
+    rows.map((r) => [
+      r.id,
+      { phone_mobile: r.phone_mobile ?? '', preferred_contact: r.preferred_contact ?? null },
+    ])
+  )
+}
+
 export async function getPatient(id: string): Promise<Patient> {
   const usp = new URLSearchParams({
     id: `eq.${id}`,
@@ -106,6 +139,7 @@ export interface CreatePatientPayload {
 
   phone1?: string
   phone2?: string
+  preferred_contact?: string
 
   sex?: string
   race?: string
@@ -141,6 +175,16 @@ export interface CreatePatientPayload {
   rn_in_insurance?: boolean
   vip?: boolean
   notes?: string
+
+  /** Convênio — colunas opcionais na tabela `patients` (alinhado RiseUP / produto). */
+  insurance_company?: string
+  insurance_plan?: string
+  insurance_member_number?: string
+  insurance_card_valid_until?: string
+
+  allergies?: string
+  medications_in_use?: string
+  chronic_conditions?: string
 
   redirect_url?: string
 }

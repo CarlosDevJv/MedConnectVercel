@@ -180,6 +180,7 @@ function buildCreatePayload(values: CreatePatientValues): CreatePatientPayload {
 
     ...optionalDigits('phone1', values.phone1),
     ...optionalDigits('phone2', values.phone2),
+    ...optionalString('preferred_contact', values.preferred_contact),
 
     ...optionalString('sex', values.sex),
     ...optionalString('race', values.race),
@@ -213,6 +214,14 @@ function buildCreatePayload(values: CreatePatientValues): CreatePatientPayload {
     ...(values.rn_in_insurance ? { rn_in_insurance: true } : {}),
     ...(values.vip ? { vip: true } : {}),
     ...optionalString('notes', values.notes),
+
+    ...optionalString('insurance_company', values.insurance_company),
+    ...optionalString('insurance_plan', values.insurance_plan),
+    ...optionalString('insurance_member_number', values.insurance_member_number),
+    ...optionalString('insurance_card_valid_until', values.insurance_card_valid_until),
+    ...optionalString('allergies', values.allergies),
+    ...optionalString('medications_in_use', values.medications_in_use),
+    ...optionalString('chronic_conditions', values.chronic_conditions),
   }
 }
 
@@ -240,6 +249,7 @@ function buildUpdatePayload(values: UpdatePatientValues): UpdatePatientPayload {
 
     phone1: nullableDigits(values.phone1),
     phone2: nullableDigits(values.phone2),
+    preferred_contact: nullableEnum(values.preferred_contact),
 
     sex: nullableEnum(values.sex),
     race: nullableEnum(values.race),
@@ -273,6 +283,14 @@ function buildUpdatePayload(values: UpdatePatientValues): UpdatePatientPayload {
     rn_in_insurance: values.rn_in_insurance ?? false,
     vip: values.vip ?? false,
     notes: nullableString(values.notes),
+
+    insurance_company: nullableString(values.insurance_company),
+    insurance_plan: nullableString(values.insurance_plan),
+    insurance_member_number: nullableString(values.insurance_member_number),
+    insurance_card_valid_until: nullableString(values.insurance_card_valid_until),
+    allergies: nullableString(values.allergies),
+    medications_in_use: nullableString(values.medications_in_use),
+    chronic_conditions: nullableString(values.chronic_conditions),
   }
 }
 

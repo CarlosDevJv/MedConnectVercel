@@ -1,4 +1,5 @@
 import { AdminDashboard } from '@/app/pages/AdminDashboard'
+import { DoctorDashboard } from '@/app/pages/DoctorDashboard'
 import { HomePlaceholder } from '@/app/pages/HomePlaceholder'
 import { useAuth } from '@/features/auth/useAuth'
 
@@ -27,6 +28,14 @@ export function Dashboard() {
 
   if (roles.includes('admin') || roles.includes('gestor')) {
     return <AdminDashboard />
+  }
+
+  if (
+    roles.includes('medico') &&
+    !roles.includes('admin') &&
+    !roles.includes('gestor')
+  ) {
+    return <DoctorDashboard />
   }
 
   return <HomePlaceholder />

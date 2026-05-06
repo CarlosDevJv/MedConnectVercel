@@ -7,6 +7,7 @@ import {
   BLOOD_TYPE_OPTIONS,
   DOCUMENT_TYPES,
   MARITAL_STATUS_OPTIONS,
+  PREFERRED_CONTACT_OPTIONS,
   RACE_OPTIONS,
   SEX_OPTIONS,
 } from '@/features/patients/types'
@@ -33,7 +34,12 @@ const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/
  * existing edge function payload).
  */
 export const registerPatientSchema = z.object({
-  full_name: z.string().trim().min(3, 'Mínimo de 3 caracteres').max(120, 'Máximo de 120 caracteres'),
+  full_name: z
+    .string()
+    .trim()
+    .min(3, 'Mínimo de 3 caracteres')
+    .max(120, 'Máximo de 120 caracteres')
+    .refine((s) => !s.includes('@'), 'Informe um nome próprio; não use email no campo nome.'),
   email: z.string().min(1, 'Informe seu email').email('Email inválido'),
   cpf: z
     .string()
@@ -59,7 +65,8 @@ const baseFullSchema = z.object({
     .string()
     .trim()
     .min(3, 'Mínimo de 3 caracteres')
-    .max(255, 'Máximo de 255 caracteres'),
+    .max(255, 'Máximo de 255 caracteres')
+    .refine((s) => !s.includes('@'), 'Informe um nome próprio; não use email no campo nome.'),
   social_name: optionalString(),
   email: z.string().min(1, 'Informe o email').email('Email inválido'),
   cpf: z
@@ -95,6 +102,8 @@ const baseFullSchema = z.object({
       (value) => !value || phoneRegex.test(stripNonDigits(value)),
       'Telefone deve ter 10 ou 11 dígitos'
     ),
+
+  preferred_contact: optionalEnum(PREFERRED_CONTACT_OPTIONS),
 
   sex: optionalEnum(SEX_OPTIONS),
   race: optionalEnum(RACE_OPTIONS),
@@ -144,6 +153,21 @@ const baseFullSchema = z.object({
   legacy_code: optionalString(),
   rn_in_insurance: z.boolean().optional(),
   vip: z.boolean().optional(),
+
+  insurance_company: optionalString(),
+  insurance_plan: optionalString(),
+  insurance_member_number: optionalString(),
+  insurance_card_valid_until: z
+    .string()
+    .optional()
+    .refine(
+      (value) => !value || isoDateRegex.test(value),
+      'Validade inválida (use AAAA-MM-DD)'
+    ),
+
+  allergies: optionalString(),
+  medications_in_use: optionalString(),
+  chronic_conditions: optionalString(),
 })
 
 export const createPatientSchema = baseFullSchema
@@ -163,9 +187,10 @@ export {
 }
 
 export {
-  DOCUMENT_TYPES,
-  SEX_OPTIONS,
-  RACE_OPTIONS,
-  MARITAL_STATUS_OPTIONS,
   BLOOD_TYPE_OPTIONS,
+  DOCUMENT_TYPES,
+  MARITAL_STATUS_OPTIONS,
+  PREFERRED_CONTACT_OPTIONS,
+  RACE_OPTIONS,
+  SEX_OPTIONS,
 } from '@/features/patients/types'

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Select,
   SelectContent,
@@ -103,12 +104,26 @@ export function DoctorsToolbar({
         </div>
 
         {canCreate && createWithPasswordHref && (
-          <Button type="button" variant="outline" asChild>
-            <Link to={createWithPasswordHref}>
-              <KeyRound className="h-4 w-4" />
-              Senha + CRM
-            </Link>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[var(--color-foreground)]/25 bg-[var(--color-muted)]/50 font-semibold text-[var(--color-foreground)] shadow-sm hover:bg-[var(--color-muted)]"
+                asChild
+              >
+                <Link to={createWithPasswordHref}>
+                  <KeyRound className="h-4 w-4" />
+                  Senha + CRM
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[280px] text-xs leading-relaxed">
+              Cadastro alternativo: define senha inicial e dados de CRM no mesmo fluxo (Edge Function{' '}
+              <span className="font-mono">create-user-with-password</span> com perfil médico, conforme RiseUP /
+              Apidog).
+            </TooltipContent>
+          </Tooltip>
         )}
         {canCreate && (
           <Button type="button" onClick={onCreate}>

@@ -23,6 +23,8 @@ function statusClasses(status: AppointmentStatus): string {
       return 'border-slate-200 bg-slate-100/90 text-slate-800'
     case 'cancelled':
       return 'border-gray-200 bg-gray-100/80 text-gray-500 line-through opacity-75'
+    case 'no_show':
+      return 'border-rose-300/80 bg-rose-100/90 text-rose-950'
     default:
       return 'border-[var(--color-border)] bg-[var(--color-muted)]'
   }
@@ -38,6 +40,8 @@ function statusDotClass(status: AppointmentStatus): string {
       return 'bg-slate-400'
     case 'cancelled':
       return 'bg-gray-400'
+    case 'no_show':
+      return 'bg-rose-500'
     default:
       return 'bg-[var(--color-accent)]'
   }

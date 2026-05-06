@@ -5,7 +5,6 @@ import { PublicLayout } from '@/app/layouts/PublicLayout'
 import { Dashboard } from '@/app/pages/Dashboard'
 import { RedirectIfAuthed, RequireAuth, RequireRole } from '@/features/auth/guards'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
-import { WhoAmIPage } from '@/features/auth/pages/WhoAmIPage'
 import { DoctorDetailsPage } from '@/features/doctors/pages/DoctorDetailsPage'
 import { DoctorPasswordCreatePage } from '@/features/doctors/pages/DoctorPasswordCreatePage'
 import { DoctorsListPage } from '@/features/doctors/pages/DoctorsListPage'
@@ -15,6 +14,7 @@ import { PatientsListPage } from '@/features/patients/pages/PatientsListPage'
 import { RegisterPatientPage } from '@/features/patients/pages/RegisterPatientPage'
 import { AnalyticsDashboardPage } from '@/features/analytics/pages/AnalyticsDashboardPage'
 import { AgendaPage } from '@/features/agenda/pages/AgendaPage'
+import { WaitlistPage } from '@/features/agenda/pages/WaitlistPage'
 import { CommunicationsPage } from '@/features/communications/pages/CommunicationsPage'
 import { ConsultationFormPage } from '@/features/emr/pages/ConsultationFormPage'
 import { PatientChartPage } from '@/features/emr/pages/PatientChartPage'
@@ -143,6 +143,14 @@ const appChildren: RouteObject[] = [
     ),
   },
   {
+    path: 'fila-de-espera',
+    element: (
+      <RequireRole roles={[...AGENDA_ROLES]}>
+        <WaitlistPage />
+      </RequireRole>
+    ),
+  },
+  {
     path: 'relatorios',
     element: (
       <RequireRole roles={[...REPORT_ROLES]}>
@@ -183,10 +191,6 @@ const appChildren: RouteObject[] = [
     element: <PrivacySecurityPage />,
   },
 ]
-
-if (import.meta.env.DEV) {
-  appChildren.push({ path: 'debug/whoami', element: <WhoAmIPage /> })
-}
 
 export const router = createBrowserRouter([
   {

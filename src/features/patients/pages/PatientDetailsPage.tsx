@@ -2,6 +2,7 @@ import {
   Activity,
   AlertCircle,
   ArrowLeft,
+  Building2,
   CalendarDays,
   ClipboardList,
   Heart,
@@ -10,6 +11,7 @@ import {
   MapPin,
   Pencil,
   Phone,
+  Pill,
   RefreshCcw,
   Trash2,
   User,
@@ -239,6 +241,28 @@ export function PatientDetailsPage() {
           )}
         </Card>
 
+        <Card title="Convênio" icon={<Building2 className="h-4 w-4" />}>
+          {patient.insurance_company ||
+          patient.insurance_plan ||
+          patient.insurance_member_number ||
+          patient.insurance_card_valid_until ? (
+            <>
+              {patient.insurance_company && (
+                <Row label="Operadora / convênio" value={patient.insurance_company} />
+              )}
+              {patient.insurance_plan && <Row label="Plano" value={patient.insurance_plan} />}
+              {patient.insurance_member_number && (
+                <Row label="Matrícula / carteirinha" value={patient.insurance_member_number} />
+              )}
+              {patient.insurance_card_valid_until && (
+                <Row label="Validade da carteira" value={formatDate(patient.insurance_card_valid_until)} />
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-[var(--color-muted-foreground)]">Convênio não informado.</p>
+          )}
+        </Card>
+
         <Card title="Informações médicas" icon={<Heart className="h-4 w-4" />} className="lg:col-span-2">
           <div className="grid gap-3 sm:grid-cols-2">
             {patient.blood_type && <Row label="Tipo sanguíneo" value={patient.blood_type} />}
@@ -266,6 +290,43 @@ export function PatientDetailsPage() {
               />
             )}
           </div>
+
+          {(patient.allergies || patient.medications_in_use || patient.chronic_conditions) && (
+            <div className="mt-4 grid gap-3 border-t border-[var(--color-border)] pt-4 sm:grid-cols-2">
+              {patient.allergies && (
+                <div className="sm:col-span-2">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-muted-foreground)]">
+                    <Pill className="h-3.5 w-3.5" />
+                    Alergias
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-foreground)] whitespace-pre-wrap">
+                    {patient.allergies}
+                  </p>
+                </div>
+              )}
+              {patient.medications_in_use && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-[var(--color-muted-foreground)]">
+                    Medicamentos em uso
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-foreground)] whitespace-pre-wrap">
+                    {patient.medications_in_use}
+                  </p>
+                </div>
+              )}
+              {patient.chronic_conditions && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-[var(--color-muted-foreground)]">
+                    Condições crônicas
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-foreground)] whitespace-pre-wrap">
+                    {patient.chronic_conditions}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {patient.notes && (
             <div className="mt-3 border-t border-[var(--color-border)] pt-3">
               <p className="text-xs text-[var(--color-muted-foreground)]">Observações</p>
@@ -277,7 +338,10 @@ export function PatientDetailsPage() {
           {!patient.blood_type &&
             patient.weight_kg === null &&
             patient.height_m === null &&
-            !patient.notes && (
+            !patient.notes &&
+            !patient.allergies &&
+            !patient.medications_in_use &&
+            !patient.chronic_conditions && (
               <p className="text-sm text-[var(--color-muted-foreground)]">Sem informações médicas.</p>
             )}
         </Card>

@@ -9,24 +9,26 @@ export interface AnalyticsPeriod {
 
 export interface ExecutiveMetrics {
   period: AnalyticsPeriod
-  /** Consultas concluídas no período (simulado) */
+  /** Consultas concluídas no período */
   appointmentsCompleted: number
-  /** Total agendado no período (simulado) */
+  /** Total agendado no período */
   appointmentsScheduled: number
-  /** Taxa de no-show / absenteísmo 0–100 (simulado) */
+  /** Taxa de no-show / absenteísmo 0–100 */
   noShowRatePercent: number
-  /** Faturamento no período BRL (simulado) */
+  /** Faturamento estimado (modelo simplificado) ou mock */
   revenueBrl: number
-  /** Nota média satisfação 0–10 (simulado) */
-  satisfactionAvg: number
+  /** Nota média (mock pode preencher; dados reais opcionais) */
+  satisfactionAvg: number | null
   /** Série consultas por dia (rótulo + valor) */
   consultationsByDay: { label: string; value: number }[]
-  /** Faturamento por mês no intervalo (simulado) */
+  /** Faturamento por mês no intervalo */
   revenueByMonth: { month: string; value: number }[]
-  /** Top pacientes por volume (simulado) */
+  /** Top pacientes por volume */
   topPatients: { name: string; count: number }[]
-  /** Top médicos por atendimentos (simulado) */
+  /** Top médicos por atendimentos */
   topDoctors: { name: string; count: number }[]
-  /** Convênios: repartição % (simulado) */
+  /** Convênios: repartição % */
   insuranceShare: { name: string; percent: number }[]
+  /** `appointments` = agregado real; `mock` = simulação */
+  derivation?: 'appointments' | 'mock' | 'hybrid'
 }

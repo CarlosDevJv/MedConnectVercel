@@ -7,6 +7,8 @@ export const buttonVariants = cva(
       variant: {
         primary:
           'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:bg-[#2c2c30] active:bg-[#1f1f22] shadow-sm',
+        secondary:
+          'bg-[var(--color-muted)] text-[var(--color-foreground)] hover:bg-[var(--color-border)] active:bg-[#dcdce0]',
         outline:
           'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:bg-[var(--color-muted)] active:bg-[#ececef]',
         ghost: 'text-[var(--color-foreground)] hover:bg-[var(--color-muted)]',

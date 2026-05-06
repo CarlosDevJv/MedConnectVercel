@@ -1,5 +1,6 @@
-import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, ListOrdered, Search } from 'lucide-react'
 import * as React from 'react'
+import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,6 +38,8 @@ export interface AgendaToolbarProps {
   statusFilter: AppointmentStatus | 'all'
   onStatusFilter: (v: AppointmentStatus | 'all') => void
   onScheduleIntent: (intent: ScheduleIntent) => void
+  scheduleDisabled?: boolean
+  scheduleDisabledTitle?: string
 }
 
 export function AgendaToolbar({
@@ -51,6 +54,8 @@ export function AgendaToolbar({
   statusFilter,
   onStatusFilter,
   onScheduleIntent,
+  scheduleDisabled = false,
+  scheduleDisabledTitle,
 }: AgendaToolbarProps) {
   const [menuOpen, setMenuOpen] = React.useState(false)
   const wrapRef = React.useRef<HTMLDivElement>(null)
@@ -121,6 +126,12 @@ export function AgendaToolbar({
       </div>
 
       <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[260px] lg:justify-end">
+        <Button type="button" variant="outline" size="sm" asChild>
+          <Link to="/app/fila-de-espera" className="gap-1.5">
+            <ListOrdered className="h-3.5 w-3.5" />
+            Fila de espera
+          </Link>
+        </Button>
         <Button type="button" variant="outline" size="sm" disabled title="Em breve">
           Baixar PDF
         </Button>
@@ -153,7 +164,12 @@ export function AgendaToolbar({
             type="button"
             size="sm"
             className="gap-1 pr-2"
-            onClick={() => setMenuOpen((o) => !o)}
+            disabled={scheduleDisabled}
+            title={scheduleDisabled ? scheduleDisabledTitle : undefined}
+            onClick={() => {
+              if (scheduleDisabled) return
+              setMenuOpen((o) => !o)
+            }}
           >
             <CalendarRange className="h-4 w-4" />
             Agendar

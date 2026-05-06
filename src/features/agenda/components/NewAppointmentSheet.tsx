@@ -45,6 +45,7 @@ interface FormValues {
   date: string
   time: string
   duration_minutes: number
+  notes: string
 }
 
 export interface NewAppointmentSheetProps {
@@ -87,6 +88,7 @@ export function NewAppointmentSheet({
       date: defaultDate,
       time: '',
       duration_minutes: 30,
+      notes: '',
     },
   })
 
@@ -154,6 +156,8 @@ export function NewAppointmentSheet({
         duration_minutes: values.duration_minutes,
         status: 'requested',
         created_by: userId,
+        appointment_type: appointmentType,
+        notes: values.notes?.trim() ? values.notes.trim() : undefined,
       })
       toast.success('Agendamento criado.')
       onOpenChange(false)
@@ -313,6 +317,17 @@ export function NewAppointmentSheet({
                       max={480}
                       step={10}
                       {...register('duration_minutes', { valueAsNumber: true })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="appt_notes_new">Observações</Label>
+                    <textarea
+                      id="appt_notes_new"
+                      rows={2}
+                      {...register('notes')}
+                      className="w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)]/70 focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
+                      placeholder="Opcional — visível para a equipe"
                     />
                   </div>
                 </>

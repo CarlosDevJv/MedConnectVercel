@@ -1,10 +1,10 @@
 import type { UserRole } from '@/types/user'
 
-/** Cadastro / edição de pacientes — sem médico. */
-export const PATIENT_FORM_ROLES: UserRole[] = ['admin', 'gestor', 'secretaria']
+/** Cadastro / edição / exclusão de pacientes e acesso ao prontuário (perfil médico incluído). */
+export const PATIENT_FORM_ROLES: UserRole[] = ['admin', 'gestor', 'secretaria', 'medico']
 
-/** Leitura de cadastro e prontuário (inclui médico). */
-export const PATIENT_READ_ROLES: UserRole[] = [...PATIENT_FORM_ROLES, 'medico']
+/** Leitura de cadastro e prontuário (mesmo conjunto que pode editar cadastro). */
+export const PATIENT_READ_ROLES: UserRole[] = [...PATIENT_FORM_ROLES]
 
 export const AGENDA_ROLES: UserRole[] = ['admin', 'gestor', 'medico', 'secretaria']
 
@@ -14,7 +14,15 @@ export const SECRETARIA_MANAGEMENT_ROLES: UserRole[] = ['admin', 'gestor']
 
 export const REPORT_ROLES: UserRole[] = ['admin', 'gestor', 'medico']
 
+/** Indicadores executivos — admin e gestor apenas (sem médico). */
 export const ANALYTICS_ROLES: UserRole[] = ['admin', 'gestor']
+
+/** Visualizar ou agendar em várias agendas; exclusivo do perfil apenas-médico (ver AgendaPage). */
+export const MULTI_DOCTOR_AGENDA_ROLES: UserRole[] = ['admin', 'gestor', 'secretaria']
+
+export function canUseMultiDoctorAgenda(roles: UserRole[]): boolean {
+  return roles.some((r) => MULTI_DOCTOR_AGENDA_ROLES.includes(r))
+}
 
 export const COMMUNICATIONS_ROLES: UserRole[] = ['admin', 'gestor', 'medico', 'secretaria']
 

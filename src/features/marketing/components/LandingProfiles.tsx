@@ -75,6 +75,15 @@ export function LandingProfiles() {
           <p className="mt-3 text-[15px] text-[var(--color-muted-foreground)]">
             Filtros, painéis e atalhos mudam conforme o perfil escolhido — ilustração de referência apenas.
           </p>
+          {tab === 'medicos' ? (
+            <ul className="mt-5 list-disc space-y-1.5 pl-5 text-[15px] text-[var(--color-foreground)]">
+              <li>Prontuário médico</li>
+              <li>Gestão de laudos</li>
+              <li>Agendamentos próprios</li>
+              <li>Comunicação com pacientes</li>
+              <li>Relatórios médicos</li>
+            </ul>
+          ) : null}
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="h-28 rounded-[var(--radius-md)] bg-[var(--color-muted)]/80 ring-1 ring-[var(--color-border)]" />
             <div className="h-28 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)]/50 ring-1 ring-[var(--color-border)]" />

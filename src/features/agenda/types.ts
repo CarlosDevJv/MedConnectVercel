@@ -1,13 +1,20 @@
 /** Alinhado ao Apidog: REST appointments + doctor_availability + doctor_exceptions + get-available-slots */
 
-export const APPOINTMENT_STATUSES = ['requested', 'confirmed', 'completed', 'cancelled'] as const
+export const APPOINTMENT_STATUSES = [
+  'requested',
+  'confirmed',
+  'completed',
+  'cancelled',
+  'no_show',
+] as const
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
-  requested: 'Pendente',
+  requested: 'Agendado',
   confirmed: 'Confirmado',
   completed: 'Realizado',
   cancelled: 'Cancelado',
+  no_show: 'Não compareceu',
 }
 
 export const APPOINTMENT_TYPES = ['presencial', 'telemedicina'] as const
@@ -29,6 +36,11 @@ export interface Appointment {
   scheduled_at: string
   status: AppointmentStatus
   duration_minutes?: number | null
+  /** presencial | telemedicina — requer migração `appointments.appointment_type` */
+  appointment_type?: AppointmentType | null
+  notes?: string | null
+  reminder_enabled?: boolean | null
+  last_reminder_sent_at?: string | null
 }
 
 export interface CreateAppointmentPayload {
@@ -38,6 +50,55 @@ export interface CreateAppointmentPayload {
   duration_minutes?: number
   status?: AppointmentStatus
   created_by: string
+  appointment_type?: AppointmentType
+  notes?: string | null
+  reminder_enabled?: boolean
+}
+
+export type WaitlistStatus = 'waiting' | 'offered' | 'booked' | 'cancelled'
+
+export const WAITLIST_STATUS_LABELS: Record<WaitlistStatus, string> = {
+  waiting: 'Aguardando',
+  offered: 'Vaga ofertada',
+  booked: 'Convertido',
+  cancelled: 'Cancelado',
+}
+
+export interface AppointmentWaitlist {
+  id: string
+  doctor_id: string
+  patient_id: string
+  appointment_type: AppointmentType | null
+  notes: string | null
+  window_start: string
+  window_end: string | null
+  status: WaitlistStatus
+  priority: number
+  created_at: string
+  created_by: string | null
+}
+
+export interface CreateWaitlistPayload {
+  doctor_id: string
+  patient_id: string
+  window_start: string
+  window_end?: string | null
+  appointment_type?: AppointmentType | null
+  notes?: string | null
+  priority?: number
+  created_by?: string | null
+}
+
+export interface UpdateWaitlistPayload {
+  status?: WaitlistStatus
+  window_start?: string
+  window_end?: string | null
+  notes?: string | null
+  priority?: number
+}
+
+export interface EnrichedWaitlistItem extends AppointmentWaitlist {
+  patient_name: string
 }
 
 export interface ListAppointmentsParams {

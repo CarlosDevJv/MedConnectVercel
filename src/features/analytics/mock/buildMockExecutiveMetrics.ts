@@ -67,5 +67,6 @@ export function buildMockExecutiveMetrics(period: AnalyticsPeriod): ExecutiveMet
     topPatients,
     topDoctors,
     insuranceShare,
+    derivation: 'mock',
   }
 }

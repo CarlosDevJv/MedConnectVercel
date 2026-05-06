@@ -27,6 +27,16 @@ export type MaritalStatus = (typeof MARITAL_STATUS_OPTIONS)[number]
 export const BLOOD_TYPE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
 export type BloodType = (typeof BLOOD_TYPE_OPTIONS)[number]
 
+export const PREFERRED_CONTACT_OPTIONS = ['phone', 'sms', 'email', 'whatsapp'] as const
+export type PreferredContact = (typeof PREFERRED_CONTACT_OPTIONS)[number]
+
+export const PREFERRED_CONTACT_LABELS: Record<PreferredContact, string> = {
+  phone: 'Ligação',
+  sms: 'SMS',
+  email: 'E-mail',
+  whatsapp: 'WhatsApp',
+}
+
 export interface Patient {
   id: string
   full_name: string
@@ -41,6 +51,9 @@ export interface Patient {
   phone_mobile: string
   phone1: string | null
   phone2: string | null
+
+  /** Requer coluna `preferred_contact` no Supabase */
+  preferred_contact?: PreferredContact | null
 
   sex: Sex | null
   race: Race | null
@@ -76,6 +89,16 @@ export interface Patient {
   legacy_code: string | null
   rn_in_insurance: boolean | null
   vip: boolean | null
+
+  /** Opcionais até existirem colunas no Supabase em todos os ambientes. */
+  insurance_company?: string | null
+  insurance_plan?: string | null
+  insurance_member_number?: string | null
+  insurance_card_valid_until?: string | null
+
+  allergies?: string | null
+  medications_in_use?: string | null
+  chronic_conditions?: string | null
 
   created_at: string
   updated_at: string | null

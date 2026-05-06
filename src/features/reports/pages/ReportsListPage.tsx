@@ -39,6 +39,7 @@ import {
 } from '@/features/reports/utils/dateRange'
 import { downloadReportsCsv } from '@/features/reports/utils/exportReportsCsv'
 import { formatDate, formatDateTime } from '@/features/patients/utils/format'
+import { useAuth } from '@/features/auth/useAuth'
 import { cn } from '@/lib/cn'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
@@ -73,6 +74,13 @@ function filterReportsClient(items: EnrichedReport[], q: string): EnrichedReport
 export function ReportsListPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const { userInfo } = useAuth()
+  const userId = userInfo?.user.id ?? ''
+  const roles = userInfo?.roles ?? []
+  const scopeReportsToCreator =
+    Boolean(userId) &&
+    roles.includes('medico') &&
+    !roles.some((r) => r === 'admin' || r === 'gestor')
 
   const [statusTab, setStatusTab] = React.useState<ReportStatus>('draft')
   const [page, setPage] = React.useState(1)
@@ -113,8 +121,9 @@ export function ReportsListPage() {
       pageSize,
       order: 'created_at.desc',
       ...(appliedFrom && appliedTo ? { createdFrom: appliedFrom, createdTo: appliedTo } : {}),
+      ...(scopeReportsToCreator ? { created_by: userId } : {}),
     }),
-    [statusTab, page, pageSize, appliedFrom, appliedTo]
+    [statusTab, page, pageSize, appliedFrom, appliedTo, scopeReportsToCreator, userId]
   )
 
   const query = useReportsList(listParams)

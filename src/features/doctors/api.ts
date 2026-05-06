@@ -1,4 +1,5 @@
 import { ApiError, apiClient, parseContentRangeTotal } from '@/lib/apiClient'
+import { stripNonDigits } from '@/features/patients/utils/cpf'
 
 import type { Doctor, DoctorList, ListDoctorsParams } from '@/features/doctors/types'
 
@@ -44,6 +45,18 @@ export async function listDoctors(params: ListDoctorsParams = {}): Promise<Docto
   return { items: result.data, total }
 }
 
+export async function countDoctors(): Promise<number> {
+  const result = await apiClient.request<unknown[]>({
+    method: 'GET',
+    path: '/rest/v1/doctors?select=id&limit=0',
+    options: { headers: { Prefer: 'count=exact' } },
+  })
+  const n = parseContentRangeTotal(result.headers)
+  if (n !== null) return n
+  const list = await listDoctors({ page: 1, pageSize: 50000 })
+  return list.total
+}
+
 export async function getDoctor(id: string): Promise<Doctor> {
   const usp = new URLSearchParams({
     id: `eq.${id}`,
@@ -67,8 +80,8 @@ export interface CreateDoctorPayload {
   specialty?: string
   birth_date?: string
   /**
-   * Quando enviado, a Edge Function `create-doctor` deve criar o usuário com login por senha
-   * (comportamento RiseUP — confirmar deploy do backend).
+   * Com senha: `POST /functions/v1/create-user-with-password` + `role=medico` (contrato Apidog).
+   * Sem senha: `POST /functions/v1/create-doctor` (fluxo sem credencial inicial no Auth).
    */
   password?: string
 }
@@ -80,22 +93,53 @@ export interface CreateDoctorResponse {
   message?: string
 }
 
-export async function createDoctor(payload: CreateDoctorPayload) {
-  const body: Record<string, unknown> = {
-    full_name: payload.full_name,
-    email: payload.email,
-    cpf: payload.cpf,
-    crm: payload.crm,
-    crm_uf: payload.crm_uf,
+/**
+ * Campos da tabela `doctors` / perfil profissional: a doc OpenAPI de
+ * `create-user-with-password` pode não listá-los, mas a Edge Function deve
+ * repassar para o banco quando `role=medico`.
+ */
+function buildDoctorProfessionalJson(payload: CreateDoctorPayload): Record<string, unknown> {
+  const phoneDigits = payload.phone_mobile ? stripNonDigits(payload.phone_mobile) : ''
+  const specialty = payload.specialty?.trim()
+  const birth = payload.birth_date?.trim()
+
+  const out: Record<string, unknown> = {
+    full_name: payload.full_name.trim(),
+    email: payload.email.trim(),
+    cpf: stripNonDigits(payload.cpf),
+    crm: stripNonDigits(payload.crm),
+    crm_uf: payload.crm_uf.trim().toUpperCase().slice(0, 2),
   }
-  if (payload.phone_mobile) body.phone_mobile = payload.phone_mobile
-  if (payload.specialty) body.specialty = payload.specialty
-  if (payload.birth_date) body.birth_date = payload.birth_date
-  if (payload.password) body.password = payload.password
+
+  if (phoneDigits) {
+    out.phone_mobile = phoneDigits
+    out.phone = phoneDigits
+  }
+  if (specialty) out.specialty = specialty
+  if (birth) out.birth_date = birth
+
+  return out
+}
+
+export async function createDoctor(payload: CreateDoctorPayload) {
+  const professional = buildDoctorProfessionalJson(payload)
+
+  if (payload.password) {
+    const body: Record<string, unknown> = {
+      ...professional,
+      password: payload.password,
+      role: 'medico',
+    }
+
+    return apiClient.post<CreateDoctorResponse, Record<string, unknown>>(
+      '/functions/v1/create-user-with-password',
+      body
+    )
+  }
 
   return apiClient.post<CreateDoctorResponse, Record<string, unknown>>(
     '/functions/v1/create-doctor',
-    body
+    professional
   )
 }
 

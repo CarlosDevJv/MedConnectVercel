@@ -1,5 +1,4 @@
 import { RefreshCw, TriangleAlert } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { getSupabase } from '@/lib/supabase'
@@ -42,14 +41,6 @@ export function RolelessBanner() {
               <RefreshCw className="h-3 w-3" />
               Reconectar conta
             </button>
-            {import.meta.env.DEV && (
-              <Link
-                to="/app/debug/whoami"
-                className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
-              >
-                Diagnóstico
-              </Link>
-            )}
           </span>
         </AlertDescription>
       </Alert>

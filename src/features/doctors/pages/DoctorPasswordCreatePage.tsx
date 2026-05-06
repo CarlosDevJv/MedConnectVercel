@@ -62,13 +62,13 @@ export function DoctorPasswordCreatePage() {
           Novo médico (senha + CRM)
         </h1>
         <p className="max-w-[640px] text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-          Define senha inicial e dados profissionais no mesmo fluxo enviados para{' '}
+          Fluxo RiseUP / Apidog:{' '}
           <code className="rounded-md bg-[var(--color-muted)] px-1 font-mono text-xs">
-            create-doctor
+            POST /functions/v1/create-user-with-password
           </code>{' '}
-          com o campo{' '}
-          <code className="rounded-md bg-[var(--color-muted)] px-1 font-mono text-xs">password</code>
-          .
+          com <code className="rounded-md bg-[var(--color-muted)] px-1 font-mono text-xs">role</code>{' '}
+          <span className="font-mono text-xs">medico</span> e dados de CRM para criar o perfil médico com
+          senha inicial (e-mail auto-confirmado).
         </p>
       </header>
 

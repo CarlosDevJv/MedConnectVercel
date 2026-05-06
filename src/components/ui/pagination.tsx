@@ -43,9 +43,6 @@ export function Pagination({ page, pageSize, total, onPageChange, className }: P
           <ChevronLeft className="h-4 w-4" />
           Anterior
         </Button>
-        <span className="px-1 text-sm text-[var(--color-muted-foreground)]">
-          {page} / {totalPages}
-        </span>
         <Button
           type="button"
           variant="outline"

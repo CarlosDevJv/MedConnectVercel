@@ -23,6 +23,8 @@ function statusBadge(status: AppointmentStatus): string {
       return 'bg-slate-100 text-slate-800'
     case 'cancelled':
       return 'bg-gray-100 text-gray-600'
+    case 'no_show':
+      return 'bg-rose-100 text-rose-900'
     default:
       return 'bg-[var(--color-muted)]'
   }

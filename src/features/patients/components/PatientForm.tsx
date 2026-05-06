@@ -2,12 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Activity,
   Briefcase,
+  Building2,
   Calendar,
   Heart,
   IdCard,
   Mail,
   MapPin,
   Phone,
+  Pill,
   User,
   Users,
 } from 'lucide-react'
@@ -37,6 +39,8 @@ import {
   BLOOD_TYPE_OPTIONS,
   DOCUMENT_TYPES,
   MARITAL_STATUS_OPTIONS,
+  PREFERRED_CONTACT_LABELS,
+  PREFERRED_CONTACT_OPTIONS,
   RACE_OPTIONS,
   SEX_OPTIONS,
   type Patient,
@@ -95,6 +99,7 @@ function buildEditDefaults(patient: Patient): UpdatePatientValues {
     phone_mobile: patient.phone_mobile ?? '',
     phone1: patient.phone1 ?? '',
     phone2: patient.phone2 ?? '',
+    preferred_contact: (patient.preferred_contact as UpdatePatientValues['preferred_contact']) ?? '',
     sex: (patient.sex as UpdatePatientValues['sex']) ?? '',
     race: (patient.race as UpdatePatientValues['race']) ?? '',
     ethnicity: patient.ethnicity ?? '',
@@ -124,6 +129,14 @@ function buildEditDefaults(patient: Patient): UpdatePatientValues {
     legacy_code: patient.legacy_code ?? '',
     rn_in_insurance: patient.rn_in_insurance ?? false,
     vip: patient.vip ?? false,
+
+    insurance_company: patient.insurance_company ?? '',
+    insurance_plan: patient.insurance_plan ?? '',
+    insurance_member_number: patient.insurance_member_number ?? '',
+    insurance_card_valid_until: patient.insurance_card_valid_until ?? '',
+    allergies: patient.allergies ?? '',
+    medications_in_use: patient.medications_in_use ?? '',
+    chronic_conditions: patient.chronic_conditions ?? '',
   }
 }
 
@@ -140,6 +153,7 @@ function buildCreateDefaults(input?: Partial<CreatePatientValues>): CreatePatien
     phone_mobile: input?.phone_mobile ?? '',
     phone1: input?.phone1 ?? '',
     phone2: input?.phone2 ?? '',
+    preferred_contact: input?.preferred_contact ?? '',
     sex: input?.sex ?? '',
     race: input?.race ?? '',
     ethnicity: input?.ethnicity ?? '',
@@ -169,6 +183,14 @@ function buildCreateDefaults(input?: Partial<CreatePatientValues>): CreatePatien
     legacy_code: input?.legacy_code ?? '',
     rn_in_insurance: input?.rn_in_insurance ?? false,
     vip: input?.vip ?? false,
+
+    insurance_company: input?.insurance_company ?? '',
+    insurance_plan: input?.insurance_plan ?? '',
+    insurance_member_number: input?.insurance_member_number ?? '',
+    insurance_card_valid_until: input?.insurance_card_valid_until ?? '',
+    allergies: input?.allergies ?? '',
+    medications_in_use: input?.medications_in_use ?? '',
+    chronic_conditions: input?.chronic_conditions ?? '',
   }
 }
 
@@ -522,7 +544,7 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
               label="Observações"
               error={errors.notes?.message}
               className="md:col-span-2"
-              hint="Alergias, restrições, particularidades."
+              hint="Observações livres complementares ao prontuário."
             >
               <textarea
                 id="notes"
@@ -564,6 +586,28 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
 
             <Field label="Telefone 2" error={errors.phone2?.message}>
               <PhoneInput control={control} name="phone2" invalid={!!errors.phone2} />
+            </Field>
+
+            <Field label="Contato preferencial" error={errors.preferred_contact?.message}>
+              <Controller
+                control={control}
+                name="preferred_contact"
+                render={({ field }) => (
+                  <Select value={field.value || '__none'} onValueChange={(v) => field.onChange(v === '__none' ? '' : v)}>
+                    <SelectTrigger id="preferred_contact">
+                      <SelectValue placeholder="Não informado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">Não informado</SelectItem>
+                      {PREFERRED_CONTACT_OPTIONS.map((key) => (
+                        <SelectItem key={key} value={key}>
+                          {PREFERRED_CONTACT_LABELS[key]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </Field>
           </div>
         </FormSection>
@@ -654,10 +698,40 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
           </div>
         </FormSection>
 
+        {/* ── Convênio ── */}
+        <FormSection
+          title="Convênio"
+          description="Operadora, plano e dados da carteira (quando aplicável)."
+          icon={<Building2 className="h-4 w-4" />}
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Operadora / convênio" error={errors.insurance_company?.message}>
+              <Input
+                id="insurance_company"
+                placeholder="Ex: Unimed, Amil, SulAmérica"
+                {...register('insurance_company')}
+              />
+            </Field>
+            <Field label="Plano" error={errors.insurance_plan?.message}>
+              <Input id="insurance_plan" placeholder="Nome do plano ou modalidade" {...register('insurance_plan')} />
+            </Field>
+            <Field label="Nº da matrícula / carteirinha" error={errors.insurance_member_number?.message}>
+              <Input
+                id="insurance_member_number"
+                placeholder="Número na carteira"
+                {...register('insurance_member_number')}
+              />
+            </Field>
+            <Field label="Validade da carteira" error={errors.insurance_card_valid_until?.message}>
+              <Input id="insurance_card_valid_until" type="date" {...register('insurance_card_valid_until')} />
+            </Field>
+          </div>
+        </FormSection>
+
         {/* ── Informações Médicas ── */}
         <FormSection
           title="Informações Médicas"
-          description="Tipo sanguíneo, biometria e alergias."
+          description="Sinais vitais, biometria e histórico clínico relevante."
           icon={<Heart className="h-4 w-4" />}
         >
           <div className="grid gap-4 md:grid-cols-3">
@@ -726,6 +800,53 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
 
             <BmiDisplay control={control} className="md:col-span-3" />
           </div>
+
+          <div className="mt-6 grid gap-4 border-t border-[var(--color-border)] pt-6 md:grid-cols-3">
+            <Field
+              label="Alergias"
+              error={errors.allergies?.message}
+              className="md:col-span-3"
+              hint="Medicamentos, alimentos, látex, etc."
+            >
+              <textarea
+                id="allergies"
+                {...register('allergies')}
+                rows={2}
+                className="w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)]/70 focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
+                placeholder="Ex: Dipirona; penicilina"
+              />
+            </Field>
+            <Field
+              label="Medicamentos em uso"
+              error={errors.medications_in_use?.message}
+              className="md:col-span-3"
+            >
+              <textarea
+                id="medications_in_use"
+                {...register('medications_in_use')}
+                rows={2}
+                className="w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)]/70 focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
+                placeholder="Nome, dose e frequência quando souber"
+              />
+            </Field>
+            <Field
+              label="Condições crônicas"
+              error={errors.chronic_conditions?.message}
+              className="md:col-span-3"
+            >
+              <textarea
+                id="chronic_conditions"
+                {...register('chronic_conditions')}
+                rows={2}
+                className="w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)]/70 focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
+                placeholder="HAS, DM, asma, etc."
+              />
+            </Field>
+          </div>
+          <p className="mt-4 flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
+            <Pill className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" aria-hidden />
+            Campos clínicos complementam o laudo e o atendimento; mantenha atualizado com o paciente.
+          </p>
         </FormSection>
 
         {/* ── Footer ── */}

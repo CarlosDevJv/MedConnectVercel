@@ -65,31 +65,31 @@ export function AnalyticsDashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
-      <div
-        role="status"
-        className="rounded-[var(--radius-card)] border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950"
-      >
-        <strong className="font-semibold">Dados de demonstração.</strong> Indicadores são simulados no
-        navegador; integração com API será adicionada quando os endpoints estiverem disponíveis no{' '}
-        <a
-          className="font-medium text-amber-900 underline-offset-2 hover:underline"
-          href="https://do5wegrct3.apidog.io/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Apidog
-        </a>
-        .
-      </div>
-
-      <header className="flex flex-col gap-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          Gestão
-        </p>
-        <h1 className="font-display text-2xl text-[var(--color-foreground)]">Indicadores e relatórios</h1>
-        <p className="text-sm text-[var(--color-muted-foreground)]">
-          Visão executiva de atendimento, absenteísmo, desempenho e indicadores financeiros (simulado).
-        </p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            Gestão
+          </p>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="font-display text-2xl text-[var(--color-foreground)]">Indicadores e relatórios</h1>
+            <span className="rounded-full border border-emerald-300/80 bg-emerald-50/95 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-950">
+              Agendamentos reais
+            </span>
+          </div>
+          <p className="text-sm text-[var(--color-muted-foreground)]">
+            Indicadores de consultas derivadas da tabela de agendamentos; demais gráficos de convênio
+            permanecem orientativos. API{' '}
+            <a
+              className="font-medium text-[var(--color-accent)] underline-offset-2 hover:underline"
+              href="https://do5wegrct3.apidog.io/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Apidog RiseUP
+            </a>{' '}
+            quando os endpoints estiverem publicados.
+          </p>
+        </div>
       </header>
 
       <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:flex-row sm:flex-wrap sm:items-end">
@@ -108,19 +108,19 @@ export function AnalyticsDashboardPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          label="Consultas realizadas (demo)"
+          label="Consultas realizadas"
           value={query.isLoading ? undefined : (m?.appointmentsCompleted ?? '—')}
           icon={Stethoscope}
           loading={query.isLoading}
         />
         <StatCard
-          label="Agendadas no período (demo)"
+          label="Agendadas no período"
           value={query.isLoading ? undefined : (m?.appointmentsScheduled ?? '—')}
           icon={Calendar}
           loading={query.isLoading}
         />
         <StatCard
-          label="Taxa no-show (demo)"
+          label="Taxa no-show"
           value={
             query.isLoading
               ? undefined
@@ -132,7 +132,7 @@ export function AnalyticsDashboardPage() {
           loading={query.isLoading}
         />
         <StatCard
-          label="Faturamento BRL (demo)"
+          label="Faturamento (BRL)"
           value={
             query.isLoading
               ? undefined
@@ -144,8 +144,14 @@ export function AnalyticsDashboardPage() {
           loading={query.isLoading}
         />
         <StatCard
-          label="Satisfação média (demo)"
-          value={query.isLoading ? undefined : (m?.satisfactionAvg ?? '—')}
+          label="Satisfação média"
+          value={
+            query.isLoading
+              ? undefined
+              : m?.satisfactionAvg != null
+                ? String(m.satisfactionAvg)
+                : '—'
+          }
           icon={Smile}
           loading={query.isLoading}
         />
@@ -154,7 +160,7 @@ export function AnalyticsDashboardPage() {
       {m ? (
         <>
           <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <h2 className="font-display text-lg text-[var(--color-foreground)]">Consultas por dia (demo)</h2>
+            <h2 className="font-display text-lg text-[var(--color-foreground)]">Consultas por dia</h2>
             <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">Amostra de até 14 dias no intervalo.</p>
             <div className="mt-6 flex h-40 items-end gap-1.5">
               {m.consultationsByDay.map((b) => (
@@ -172,7 +178,7 @@ export function AnalyticsDashboardPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-              <h2 className="font-display text-lg text-[var(--color-foreground)]">Faturamento mensal (demo)</h2>
+              <h2 className="font-display text-lg text-[var(--color-foreground)]">Faturamento mensal</h2>
               <div className="mt-4 space-y-3">
                 {m.revenueByMonth.map((row) => (
                   <div key={row.month}>
@@ -196,7 +202,7 @@ export function AnalyticsDashboardPage() {
             </section>
 
             <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-              <h2 className="font-display text-lg text-[var(--color-foreground)]">Convênios (demo)</h2>
+              <h2 className="font-display text-lg text-[var(--color-foreground)]">Convênios (amostra)</h2>
               <ul className="mt-4 space-y-2 text-sm">
                 {m.insuranceShare.map((x) => (
                   <li key={x.name} className="flex justify-between gap-2">

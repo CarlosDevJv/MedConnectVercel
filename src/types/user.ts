@@ -21,6 +21,7 @@ export interface UserInfo {
   profile: UserProfile | null
   roles: UserRole[]
   permissions: UserPermissions
+  /** Preenchido por `/functions/v1/user-info`; espera-se `{ id: uuid }` do cadastro em `doctors`. */
   doctor: Record<string, unknown> | null
   patient: Record<string, unknown> | null
 }

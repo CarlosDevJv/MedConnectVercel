@@ -1,7 +1,8 @@
 import * as React from 'react'
-import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/useAuth'
+import { canUseMultiDoctorAgenda } from '@/lib/roleGroups'
 import { AgendaListView } from '@/features/agenda/components/AgendaListView'
 import { AgendaResourceSidebar } from '@/features/agenda/components/AgendaResourceSidebar'
 import { AgendaToolbar } from '@/features/agenda/components/AgendaToolbar'
@@ -27,12 +28,13 @@ import {
   startOfWeekMonday,
   toISODateString,
 } from '@/features/agenda/utils/calendar'
-import { useListDoctors } from '@/features/doctors/hooks'
+import { useResolvedDoctorId } from '@/features/agenda/useResolvedDoctorId'
 
 const DAY_START = 7
 const DAY_END = 20
 
 export function AgendaPage() {
+  const navigate = useNavigate()
   const { userInfo } = useAuth()
   const calendarRef = React.useRef<HTMLDivElement>(null)
   const [viewMode, setViewMode] = React.useState<AgendaViewMode>('week')
@@ -48,18 +50,23 @@ export function AgendaPage() {
   const [detailOpen, setDetailOpen] = React.useState(false)
 
   const userId = userInfo?.user.id ?? ''
-  const linkedDoctor = userInfo?.doctor as { id?: string } | null
-  const linkedDoctorId = typeof linkedDoctor?.id === 'string' ? linkedDoctor.id : undefined
+  const roles = userInfo?.roles ?? []
+  const multiDoctorAgenda = canUseMultiDoctorAgenda(roles)
+  const { resolvedDoctorId, medicoSemVinculo, doctorsList } = useResolvedDoctorId()
 
-  const doctorsQuery = useListDoctors({ active: true, pageSize: 200, order: 'full_name.asc' })
-  const doctorsList = React.useMemo(() => doctorsQuery.data?.items ?? [], [doctorsQuery.data?.items])
+  const sheetDoctors = React.useMemo(() => {
+    if (resolvedDoctorId) return doctorsList.filter((d) => d.id === resolvedDoctorId)
+    if (roles.includes('medico') && !multiDoctorAgenda) return []
+    return doctorsList
+  }, [resolvedDoctorId, doctorsList, roles, multiDoctorAgenda])
 
   const selectedIds = React.useMemo(() => {
-    if (linkedDoctorId) return new Set([linkedDoctorId])
+    if (resolvedDoctorId) return new Set([resolvedDoctorId])
+    if (medicoSemVinculo) return new Set<string>()
     if (!doctorsList.length) return new Set<string>()
     if (selectionOverride !== null) return selectionOverride
     return new Set(doctorsList.map((d) => d.id))
-  }, [linkedDoctorId, doctorsList, selectionOverride])
+  }, [resolvedDoctorId, medicoSemVinculo, doctorsList, selectionOverride])
 
   const weekStart = React.useMemo(() => startOfWeekMonday(anchorDate), [anchorDate])
 
@@ -97,11 +104,11 @@ export function AgendaPage() {
   }, [viewMode, anchorDate, weekStart])
 
   const effectiveDoctorIds = React.useMemo(() => {
-    if (linkedDoctorId) return [linkedDoctorId]
+    if (resolvedDoctorId) return [resolvedDoctorId]
     if (selectedIds.size === 0) return [] as string[]
     if (doctorsList.length > 0 && selectedIds.size === doctorsList.length) return undefined
     return [...selectedIds]
-  }, [linkedDoctorId, selectedIds, doctorsList.length])
+  }, [resolvedDoctorId, selectedIds, doctorsList.length])
 
   const listParams = React.useMemo(
     () => ({
@@ -115,7 +122,7 @@ export function AgendaPage() {
 
   const appointmentsQuery = useAppointmentsQuery(
     listParams,
-    Boolean(userId && (linkedDoctorId || selectedIds.size > 0))
+    Boolean(userId && (resolvedDoctorId || selectedIds.size > 0))
   )
 
   const doctorNameById = React.useMemo(() => {
@@ -184,14 +191,14 @@ export function AgendaPage() {
         calendarRef.current?.focus()
       }
       if (e.key === 'f' || e.key === 'F') {
-        toast.message('Fila de espera em breve.')
+        navigate('/app/fila-de-espera')
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [navigate])
 
-  const showNoDoctor = !linkedDoctorId && selectedIds.size === 0
+  const showNoDoctor = !resolvedDoctorId && selectedIds.size === 0
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
@@ -212,7 +219,10 @@ export function AgendaPage() {
         onSearch={setSearch}
         statusFilter={statusFilter}
         onStatusFilter={setStatusFilter}
+        scheduleDisabled={medicoSemVinculo}
+        scheduleDisabledTitle="Associe seu cadastro de médico ao usuário (campo user_id em doctors ou doctor em user-info) para agendar."
         onScheduleIntent={(intent) => {
+          if (medicoSemVinculo) return
           setScheduleIntent(intent)
           setSheetNonce((n) => n + 1)
           setSheetOpen(true)
@@ -222,13 +232,13 @@ export function AgendaPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <AgendaResourceSidebar
           doctors={
-            linkedDoctorId ? doctorsList.filter((d) => d.id === linkedDoctorId) : doctorsList
+            resolvedDoctorId ? doctorsList.filter((d) => d.id === resolvedDoctorId) : doctorsList
           }
           selectedIds={selectedIds}
           onToggle={toggleDoctor}
           onSelectAll={selectAllDoctors}
           onClearAll={clearDoctors}
-          lockedDoctorId={linkedDoctorId}
+          lockedDoctorId={resolvedDoctorId}
         />
 
         <div className="min-w-0 flex-1 flex flex-col gap-3">
@@ -237,7 +247,15 @@ export function AgendaPage() {
               Não foi possível carregar os agendamentos. Verifique sua conexão e permissões.
             </p>
           )}
-          {showNoDoctor && (
+          {medicoSemVinculo && (
+            <p className="rounded-md border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">
+              Não foi possível associar você a um médico nesta conta: falta{' '}
+              <code className="rounded bg-amber-100/90 px-1 text-xs">doctor.id</code> em user-info, campo{' '}
+              <code className="rounded bg-amber-100/90 px-1 text-xs">user_id</code> na tabela doctors ligado ao seu
+              login, ou a lista de médicos deve retornar apenas o seu perfil (RLS). Solicite ao administrador.
+            </p>
+          )}
+          {showNoDoctor && !medicoSemVinculo && (
             <p className="rounded-md border border-[var(--color-border)] bg-[var(--color-muted)]/30 px-3 py-2 text-sm">
               Selecione ao menos uma agenda na barra lateral.
             </p>
@@ -294,8 +312,8 @@ export function AgendaPage() {
         onOpenChange={setSheetOpen}
         intent={scheduleIntent}
         userId={userId}
-        doctors={doctorsList}
-        linkedDoctorId={linkedDoctorId}
+        doctors={sheetDoctors}
+        linkedDoctorId={resolvedDoctorId}
         defaultDate={toISODateString(anchorDate)}
         onCompleted={() => void appointmentsQuery.refetch()}
       />
@@ -305,6 +323,7 @@ export function AgendaPage() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         doctorName={detailAppt ? doctorNameById[detailAppt.doctor_id] : undefined}
+        onAppointmentUpdated={(row) => setDetailAppt(row)}
       />
     </div>
   )

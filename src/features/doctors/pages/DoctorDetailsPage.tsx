@@ -19,6 +19,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DeleteDoctorDialog } from '@/features/doctors/components/DeleteDoctorDialog'
+import { DoctorAvailabilitySection } from '@/features/doctors/components/DoctorAvailabilitySection'
 import { DoctorFormDrawer } from '@/features/doctors/components/DoctorFormDrawer'
 import { useDoctor } from '@/features/doctors/hooks'
 import { formatCpf } from '@/features/patients/utils/cpf'
@@ -155,6 +156,8 @@ export function DoctorDetailsPage() {
           <Row label="Última atualização" value={formatDateTime(doctor.updated_at)} />
         </Card>
       </section>
+
+      <DoctorAvailabilitySection doctorId={doctor.id} />
 
       <DoctorFormDrawer
         open={drawerOpen}

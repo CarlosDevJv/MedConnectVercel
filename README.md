@@ -50,6 +50,10 @@ VITE_APP_URL=http://localhost:5173
 
 A `VITE_SUPABASE_ANON_KEY` é a **publishable key** do projeto (formato `sb_publishable_...`). Solicite ao backend ou pegue no painel do Supabase. O arquivo `.env.local` é ignorado pelo Git.
 
+### Ambiente e dados de demonstração
+
+Cada squad pode usar um **projeto Supabase próprio** (`VITE_SUPABASE_URL`). Por isso contagens de pacientes/médicos na demo podem diferir de outros squads que compartilham o mesmo banco. Documente no README da entrega qual URL/projeto foi usado para o avaliador contextualizar números na primeira tela.
+
 ## Scripts
 
 ```bash

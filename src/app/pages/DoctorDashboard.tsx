@@ -1,18 +1,19 @@
 import * as React from 'react'
 import {
-  BarChart3,
+  AlertTriangle,
   Calendar,
+  CalendarDays,
   ChevronRight,
+  ClipboardList,
   FileText,
+  ListOrdered,
   MessageSquare,
   Plus,
   Search,
-  ShieldCheck,
-  Stethoscope,
+  Shield,
   Users,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 
 import { ModuleCard } from '@/app/components/ModuleCard'
 import { QuickAction } from '@/app/components/QuickAction'
@@ -22,79 +23,116 @@ import {
   formatLastSignIn,
   formatTimeSlot,
   getGreeting,
+  isSameLocalCalendarDay,
   statusPillClass,
 } from '@/app/pages/dashboard/formatters'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/useAuth'
 import { useAppointmentsQuery } from '@/features/agenda/hooks'
 import { APPOINTMENT_STATUS_LABELS } from '@/features/agenda/types'
-import { rangeToISOStrings } from '@/features/agenda/utils/calendar'
-import { countDoctors } from '@/features/doctors/api'
-import { countPatients } from '@/features/patients/api'
+import { useResolvedDoctorId } from '@/features/agenda/useResolvedDoctorId'
+import { addDays, rangeToISOStrings } from '@/features/agenda/utils/calendar'
+import { useReportsList } from '@/features/reports/hooks'
 import { cn } from '@/lib/cn'
 
-function usePatientCount() {
-  return useQuery({
-    queryKey: ['dashboard', 'patient-count'],
-    queryFn: () => countPatients(),
-    staleTime: 60_000,
-    retry: false,
-  })
-}
-
-function useDoctorCount() {
-  return useQuery({
-    queryKey: ['dashboard', 'doctor-count'],
-    queryFn: () => countDoctors(),
-    staleTime: 60_000,
-    retry: false,
-  })
-}
-
-export function AdminDashboard() {
+export function DoctorDashboard() {
   const { userInfo, session } = useAuth()
   const navigate = useNavigate()
+  const { resolvedDoctorId, medicoSemVinculo } = useResolvedDoctorId()
 
   const displayName =
     userInfo?.profile?.full_name?.trim() ||
     userInfo?.user?.email?.split('@')[0] ||
-    'Usuário'
+    'Doutor(a)'
 
-  const patientQuery = usePatientCount()
-  const doctorQuery = useDoctorCount()
+  const userId = userInfo?.user.id ?? ''
+  const roles = userInfo?.roles ?? []
+  const scopeReportsToCreator =
+    roles.includes('medico') && !roles.some((r) => r === 'admin' || r === 'gestor')
 
   const lastSignIn = formatLastSignIn(
     (session?.user as { last_sign_in_at?: string } | undefined)?.last_sign_in_at
   )
 
-  const todayRange = React.useMemo(() => {
-    const d = new Date()
-    return rangeToISOStrings(d, d)
-  }, [])
+  const anchorToday = React.useMemo(() => new Date(), [])
+  const weekRange = React.useMemo(
+    () => rangeToISOStrings(anchorToday, addDays(anchorToday, 6)),
+    [anchorToday]
+  )
 
-  const apptQuery = useAppointmentsQuery({
-    scheduledFrom: todayRange.from,
-    scheduledTo: todayRange.to,
-  })
+  const apptEnabled = Boolean(resolvedDoctorId) && !medicoSemVinculo
+  const apptQuery = useAppointmentsQuery(
+    {
+      doctorIds: resolvedDoctorId ? [resolvedDoctorId] : [],
+      scheduledFrom: weekRange.from,
+      scheduledTo: weekRange.to,
+    },
+    apptEnabled
+  )
+
+  const draftsQuery = useReportsList(
+    {
+      status: 'draft',
+      page: 1,
+      pageSize: 1,
+      order: 'created_at.desc',
+      ...(scopeReportsToCreator && userId ? { created_by: userId } : {}),
+    },
+    !!userId
+  )
+
+  const rawList = apptQuery.data ?? []
+  const consultasHoje = React.useMemo(
+    () => rawList.filter((a) => isSameLocalCalendarDay(a.scheduled_at, anchorToday)).length,
+    [rawList, anchorToday]
+  )
 
   const todayAppointments = React.useMemo(() => {
-    const list = apptQuery.data ?? []
-    return [...list].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).slice(0, 8)
-  }, [apptQuery.data])
+    const todayOnly = rawList.filter((a) => isSameLocalCalendarDay(a.scheduled_at, anchorToday))
+    return [...todayOnly].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).slice(0, 8)
+  }, [rawList, anchorToday])
+
+  const draftsOpen = draftsQuery.data?.total
+  const weekTotal = rawList.length
 
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
+      {medicoSemVinculo ? (
+        <div
+          className="flex gap-3 rounded-[var(--radius-card)] border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-sm sm:items-center sm:px-5"
+          role="status"
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-700" aria-hidden />
+          <p className="leading-relaxed">
+            Não encontramos vínculo do seu usuário com um médico na base. A agenda e os totais abaixo
+            ficam indisponíveis até o administrador concluir o cadastro. Você ainda pode acessar{' '}
+            <Link to="/app/pacientes" className="font-semibold underline-offset-2 hover:underline">
+              pacientes
+            </Link>
+            ,{' '}
+            <Link to="/app/relatorios" className="font-semibold underline-offset-2 hover:underline">
+              relatórios
+            </Link>{' '}
+            e{' '}
+            <Link to="/app/mensagens" className="font-semibold underline-offset-2 hover:underline">
+              mensagens
+            </Link>
+            .
+          </p>
+        </div>
+      ) : null}
+
       <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-8 shadow-[var(--shadow-card)] sm:px-8 animate-fade-in-up">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
-              Painel operacional
+              Início — médico
             </p>
             <h1 className="text-3xl font-semibold leading-tight tracking-tight text-[var(--color-foreground)] sm:text-[2.15rem]">
               {getGreeting()}, {displayName}.
             </h1>
             <p className="max-w-xl text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-              Visão geral clínica e operação do dia.
+              Sua agenda, pacientes e laudos num painel igual ao da gestão, focado na rotina clínica.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
@@ -116,20 +154,31 @@ export function AdminDashboard() {
 
       <section className="grid gap-4 sm:grid-cols-3 animate-fade-in-up-delay-1">
         <StatCard
-          label="Pacientes cadastrados"
-          value={patientQuery.isLoading ? undefined : (patientQuery.data ?? '—')}
-          loading={patientQuery.isLoading}
-          icon={Users}
+          label="Consultas hoje"
+          value={
+            !apptEnabled ? '—' : apptQuery.isLoading ? undefined : consultasHoje
+          }
+          loading={apptEnabled && apptQuery.isLoading}
+          icon={Calendar}
         />
         <StatCard
-          label="Médicos cadastrados"
-          value={
-            doctorQuery.isLoading ? undefined : doctorQuery.isError ? '—' : (doctorQuery.data ?? '—')
-          }
-          loading={doctorQuery.isLoading}
-          icon={Stethoscope}
+          label="Na próxima semana"
+          value={!apptEnabled ? '—' : apptQuery.isLoading ? undefined : weekTotal}
+          loading={apptEnabled && apptQuery.isLoading}
+          icon={CalendarDays}
         />
-        <StatCard label="Último acesso" value={lastSignIn} icon={ShieldCheck} />
+        <StatCard
+          label="Laudos em aberto"
+          value={
+            draftsQuery.isLoading
+              ? undefined
+              : draftsQuery.isError
+                ? '—'
+                : (draftsOpen ?? 0)
+          }
+          loading={draftsQuery.isLoading}
+          icon={ClipboardList}
+        />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2 animate-fade-in-up-delay-2">
@@ -144,7 +193,13 @@ export function AdminDashboard() {
               <ChevronRight className="h-4 w-4" />
             </Link>
           </header>
-          {apptQuery.isLoading ? (
+          {!apptEnabled ? (
+            <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[var(--color-muted)]/40 px-4 py-8 text-center">
+              <p className="text-sm text-[var(--color-muted-foreground)]">
+                Vínculo com médico necessário para listar seus horários.
+              </p>
+            </div>
+          ) : apptQuery.isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-16 animate-pulse rounded-[var(--radius-md)] bg-[var(--color-muted)]" />
@@ -152,7 +207,9 @@ export function AdminDashboard() {
             </div>
           ) : todayAppointments.length === 0 ? (
             <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[var(--color-muted)]/40 px-4 py-8 text-center">
-              <p className="text-sm text-[var(--color-muted-foreground)]">Nenhum agendamento para hoje.</p>
+              <p className="text-sm text-[var(--color-muted-foreground)]">
+                Nenhum agendamento para hoje.
+              </p>
               <Button type="button" variant="link" className="mt-2 text-[var(--color-accent)]" asChild>
                 <Link to="/app/agenda">Abrir agenda</Link>
               </Button>
@@ -193,82 +250,88 @@ export function AdminDashboard() {
         </div>
 
         <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
-          <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Resumo da semana</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Laudos e prontuário</h2>
           <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-            Visão agregada e séries temporais ficam em Indicadores quando a API publicar os endpoints no Apidog.
+            Continue rascunhos, libere relatórios e abra prontuários sem sair do fluxo do consultório.
           </p>
           <div className="mt-6 flex min-h-[132px] flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-muted)_0%,transparent_55%)] px-4 py-8 text-center">
-            <BarChart3 className="h-8 w-8 text-[var(--color-accent)]/80" aria-hidden />
-            <p className="max-w-[280px] text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-              Métricas reais e gráficos por dia estão em{' '}
+            <ClipboardList className="h-8 w-8 text-[var(--color-accent)]/80" aria-hidden />
+            <p className="max-w-[300px] text-sm leading-relaxed text-[var(--color-muted-foreground)]">
+              {draftsQuery.isLoading
+                ? 'Carregando laudos…'
+                : draftsQuery.isError
+                  ? 'Não foi possível carregar a contagem de laudos.'
+                  : draftsOpen
+                    ? `Você tem ${draftsOpen} laudo${draftsOpen === 1 ? '' : 's'} em aberto na lista.`
+                    : 'Nenhum laudo em rascunho com seu usuário neste momento.'}{' '}
               <Link
-                to="/app/indicadores"
+                to="/app/relatorios"
                 className="font-semibold text-[var(--color-accent)] underline-offset-2 hover:underline"
               >
-                Indicadores
+                Ir para relatórios
               </Link>
-              .
             </p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" className="gap-1.5" asChild>
+              <Link to="/app/pacientes">
+                <Users className="h-4 w-4" />
+                Pacientes
+              </Link>
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5" asChild>
+              <Link to="/app/fila-de-espera">
+                <ListOrdered className="h-4 w-4" />
+                Fila de espera
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px] animate-fade-in-up-delay-3">
-        <section className="flex flex-col gap-4">
+      <section className="grid gap-6 xl:grid-cols-[1fr_300px] animate-fade-in-up-delay-3">
+        <div className="flex flex-col gap-4">
           <header className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Módulos do sistema</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Áreas de trabalho</h2>
           </header>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <ModuleCard
               icon={Users}
               title="Pacientes"
-              description="Cadastre, edite, busque e gerencie os pacientes da clínica."
+              description="Cadastro, edição e acesso rápido ao prontuário."
               status="active"
               to="/app/pacientes"
             />
             <ModuleCard
-              icon={Stethoscope}
-              title="Médicos"
-              description="Gerencie o cadastro e a disponibilidade dos médicos."
-              status="active"
-              to="/app/medicos"
-            />
-            <ModuleCard
               icon={Calendar}
               title="Agenda"
-              description="Agende, reagende e cancele consultas com facilidade."
+              description="Sua disponibilidade e agendamentos do dia."
               status="active"
               to="/app/agenda"
             />
             <ModuleCard
               icon={FileText}
-              title="Relatórios médicos"
-              description="Laudos, prontuários e relatórios clínicos dos pacientes."
+              title="Laudos"
+              description="Gestão de relatórios e laudos médicos por paciente."
               status="active"
               to="/app/relatorios"
             />
             <ModuleCard
-              icon={BarChart3}
-              title="Indicadores"
-              description="Dashboard executivo e métricas (dados de demonstração até integração com API)."
-              status="active"
-              to="/app/indicadores"
-            />
-            <ModuleCard
               icon={MessageSquare}
               title="Mensagens"
-              description="SMS via Twilio para lembretes e avisos; entrega de laudo por SMS a partir da lista de relatórios."
+              description="Comunique-se com pacientes por SMS quando configurado."
               status="active"
               to="/app/mensagens"
             />
             <ModuleCard
-              icon={ShieldCheck}
-              title="Usuários e permissões"
-              description="Controle de acesso, roles e convites de novos usuários."
-              status="coming-soon"
+              icon={ListOrdered}
+              title="Fila de espera"
+              description="Lista de espera vinculada à sua agenda."
+              status="active"
+              to="/app/fila-de-espera"
             />
           </div>
-        </section>
+        </div>
 
         <section className="flex flex-col gap-4">
           <header>
@@ -282,26 +345,44 @@ export function AdminDashboard() {
               to="/app/pacientes/novo"
             />
             <QuickAction
-              icon={Users}
-              label="Lista de pacientes"
-              description="Busque ou filtre por CPF e nome"
+              icon={Search}
+              label="Buscar paciente"
+              description="Lista e filtros por nome ou CPF"
               to="/app/pacientes"
             />
             <QuickAction
               icon={Calendar}
               label="Agenda"
-              description="Calendário e agendamentos"
+              description="Calendário e detalhes de consultas"
               to="/app/agenda"
             />
             <QuickAction
-              icon={BarChart3}
-              label="Indicadores"
-              description="Métricas e relatórios simulados"
-              to="/app/indicadores"
+              icon={FileText}
+              label="Laudos"
+              description="Lista e edição de relatórios"
+              to="/app/relatorios"
+            />
+            <QuickAction
+              icon={Shield}
+              label="Segurança da conta"
+              description={`Último acesso registrado em ${lastSignIn}`}
+              to="/app/seguranca-e-notificacoes"
+            />
+            <QuickAction
+              icon={MessageSquare}
+              label="Mensagens"
+              description="Canal com pacientes"
+              to="/app/mensagens"
+            />
+            <QuickAction
+              icon={ListOrdered}
+              label="Fila de espera"
+              description="Pacientes em espera de vaga"
+              to="/app/fila-de-espera"
             />
           </div>
         </section>
-      </div>
+      </section>
     </div>
   )
 }
