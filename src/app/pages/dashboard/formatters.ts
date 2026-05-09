@@ -1,4 +1,5 @@
 import type { EnrichedAppointment } from '@/features/agenda/types'
+import { formatTimePtBr } from '@/lib/formatTimePtBr'
 
 export function getGreeting(): string {
   const h = new Date().getHours()
@@ -43,13 +44,22 @@ export function formatDatePill(): string {
 }
 
 export function formatTimeSlot(iso: string): string {
-  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return formatTimePtBr(iso)
 }
 
 export function formatLastSignIn(iso: string | null | undefined): string {
   if (!iso) return '—'
   const d = new Date(iso)
-  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return Number.isNaN(d.getTime())
+    ? '—'
+    : d.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
 }
 
 export function statusPillClass(status: EnrichedAppointment['status']): string {

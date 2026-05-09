@@ -11,7 +11,7 @@ export function LandingIntegrated() {
           Tudo integrado, uma <span className="text-[var(--color-accent-ink)]">única plataforma</span>.
         </h2>
         <p className="mt-4 max-w-3xl text-lg text-[var(--color-muted-foreground)]">
-          Agenda, prontuário, comunicações e indicadores compartilham a mesma base no MediConnect — menos planilhas
+          Agenda, pacientes, relatórios, comunicações (SMS) e indicadores compartilham a mesma base no MediConnect — menos planilhas
           paralelas, menos retrabalho e menos risco de informação perdida entre setores.
         </p>
 
@@ -32,8 +32,7 @@ export function LandingIntegrated() {
             </span>
             <h3 className="mt-6 text-xl font-semibold text-[var(--color-foreground)]">Comunicação automática</h3>
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">
-              Mensagens automáticas acompanham o fluxo dos agendamentos e ficam ligadas ao prontuário para equipe médica ter
-              trilho rastreável conforme as políticas da sua clínica.
+              SMS transacional (contrato RiseUP) pode acompanhar agendamentos quando integrado à operação da clínica.
             </p>
           </article>
         </div>

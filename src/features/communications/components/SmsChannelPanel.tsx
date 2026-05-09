@@ -1,23 +1,13 @@
-import { AlertCircle, Loader2, MessageCircle, RefreshCcw, Send } from 'lucide-react'
+import { Loader2, MessageCircle, Send } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { isSmsServiceDisabled } from '@/features/communications/api'
-import { useSendSmsMutation, useSmsLogsQuery } from '@/features/communications/hooks'
+import { useSendSmsMutation } from '@/features/communications/hooks'
 import { toE164Preferred } from '@/features/communications/utils/phone'
-import { formatDateTime } from '@/features/patients/utils/format'
 import { cn } from '@/lib/cn'
 
 const MSG_MAX = 1000
@@ -35,7 +25,6 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
   const [patientId, setPatientId] = React.useState('')
   const [message, setMessage] = React.useState('')
 
-  const logsQuery = useSmsLogsQuery(40)
   const sendMutation = useSendSmsMutation()
 
   const charsLeft = MSG_MAX - message.length
@@ -46,7 +35,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
     const phone_number = toE164Preferred(phoneRaw)
     const digits = phone_number.replace(/\D/g, '')
     if (digits.length < 11) {
-      toast.error('Telefone inválido', { description: 'Informe DDD + número (Brasil) ou E.164 completo (+...).' })
+      toast.error('Telefone inválido', { description: 'Informe DDD + número (Brasil) ou E.164 completo (+…).' })
       return
     }
     if (!message.trim()) {
@@ -74,9 +63,6 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
       toast.error('Falha no envio', { description })
     }
   }
-
-  const rows = logsQuery.data?.rows ?? []
-  const logNote = logsQuery.data?.unavailableReason
 
   const formBlock = (
     <form
@@ -108,7 +94,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
         <Label htmlFor={embedded ? 'hub-sms-patient' : 'sms-patient'}>ID do paciente (opcional)</Label>
         <Input
           id={embedded ? 'hub-sms-patient' : 'sms-patient'}
-          placeholder="UUID — para vincular ao prontuário"
+          placeholder="UUID — quando informado na API RiseUP (`patient_id` no body)"
           value={patientId}
           onChange={(e) => setPatientId(e.target.value)}
         />
@@ -150,97 +136,6 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
     </form>
   )
 
-  const historyBlock = (
-    <section className="flex animate-fade-in-up-delay-1 flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-medium text-[var(--color-foreground)]">
-            Histórico recente
-          </h2>
-          <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-            Registros em <code className="rounded bg-[var(--color-muted)] px-1 py-0.5 text-xs">sms_logs</code>{' '}
-            quando habilitados no Supabase.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => void logsQuery.refetch()}
-          disabled={logsQuery.isFetching}
-        >
-          <RefreshCcw className={cn('mr-2 h-3.5 w-3.5', logsQuery.isFetching && 'animate-spin')} />
-          Atualizar
-        </Button>
-      </div>
-
-      {logNote && (
-        <Alert variant="warning" icon={<AlertCircle className="h-4 w-4" aria-hidden />}>
-          <AlertTitle>Histórico não carregado</AlertTitle>
-          <AlertDescription>{logNote}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)]">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[148px]">Quando</TableHead>
-              <TableHead className="min-w-[120px]">Destino</TableHead>
-              <TableHead className="w-[140px]">Paciente</TableHead>
-              <TableHead>Texto / SID</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {logsQuery.isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="h-28 text-center text-sm text-[var(--color-muted-foreground)]">
-                  Carregando histórico…
-                </TableCell>
-              </TableRow>
-            ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="h-28 text-center text-sm text-[var(--color-muted-foreground)]">
-                  Nenhum registro encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row, idx) => {
-                const rid = row.id != null ? String(row.id) : `row-${idx}`
-                const when = row.created_at ? formatDateTime(String(row.created_at)) : '—'
-                const phone = row.phone_number != null ? String(row.phone_number) : '—'
-                const patient = row.patient_id != null ? String(row.patient_id).slice(0, 8) + '…' : '—'
-                const snippet =
-                  typeof row.message === 'string' ? row.message : (row.body as string | undefined) ?? '—'
-                const sid =
-                  typeof row.sid === 'string'
-                    ? row.sid
-                    : typeof row.twilio_sid === 'string'
-                      ? row.twilio_sid
-                      : null
-                return (
-                  <TableRow key={rid}>
-                    <TableCell className="align-top text-xs text-[var(--color-muted-foreground)]">
-                      {when}
-                    </TableCell>
-                    <TableCell className="align-top font-mono text-xs">{phone}</TableCell>
-                    <TableCell className="align-top font-mono text-xs">{patient}</TableCell>
-                    <TableCell className="align-top text-sm">
-                      <span className="line-clamp-2 text-[var(--color-foreground)]">{snippet}</span>
-                      {sid && (
-                        <p className="mt-1 text-[11px] text-[var(--color-muted-foreground)]">SID · {sid}</p>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </section>
-  )
-
   if (embedded) {
     return (
       <div className="flex flex-col gap-8">
@@ -248,12 +143,10 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-800/90">Canal disponível · API</p>
           <h3 className="font-display text-xl font-medium italic text-[var(--color-foreground)]">SMS (Twilio)</h3>
           <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-            Único envio textual contratado hoje na documentação RiseUP/APidog (<code>/functions/v1/send-sms</code>).
-            WhatsApp próprio ou e-mails transacionais exigem novos endpoints.
+            Envio documentado como <code className="text-xs">POST /functions/v1/send-sms</code> na RiseUP/APidog.
           </p>
         </div>
         {formBlock}
-        {historyBlock}
       </div>
     )
   }
@@ -266,10 +159,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
           'bg-[var(--color-surface)] px-6 py-8 sm:px-10 sm:py-10 animate-fade-in-up'
         )}
       >
-        <div
-          aria-hidden="true"
-          className="dot-pattern pointer-events-none absolute inset-0 opacity-[0.22]"
-        />
+        <div aria-hidden="true" className="dot-pattern pointer-events-none absolute inset-0 opacity-[0.22]" />
         <div className="pointer-events-none absolute -right-20 top-0 h-72 w-72 rounded-full bg-gradient-to-bl from-teal-200/50 via-transparent to-transparent blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-[var(--color-accent-soft)] opacity-70 blur-3xl" />
 
@@ -287,16 +177,14 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
               Canal de comunicação
             </h1>
             <p className="max-w-xl text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">
-              Envio transacional via SMS (contrato RiseUP). WhatsApp dedicado e e-mails de laudo ainda não estão nesta API
-              — use este módulo para lembretes e avisos textuais enquanto o backend evolui a doc operacional.
+              Único envio textual publicado nesta API. Histórico de disparos só aparecerá quando houver endpoint
+              documentado na Apidog RiseUP.
             </p>
           </div>
 
           {formBlock}
         </div>
       </section>
-
-      {historyBlock}
     </div>
   )
 }

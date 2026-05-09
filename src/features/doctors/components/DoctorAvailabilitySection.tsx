@@ -3,6 +3,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { TimeSelect24h } from '@/components/ui/time-select-24h'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,20 @@ import {
   useUpdateDoctorAvailabilityMutation,
 } from '@/features/agenda/hooks'
 import { APPOINTMENT_TYPE_LABELS, type AppointmentType } from '@/features/agenda/types'
+import {
+  DOCTOR_AVAILABILITY_API_SLOT_DEFAULT,
+  DOCTOR_AVAILABILITY_API_SLOT_MAX,
+  DOCTOR_AVAILABILITY_API_SLOT_MIN,
+  validateDoctorAvailabilityRequestInput,
+} from '@/features/agenda/utils/doctorAvailabilityOpenApi'
+import { pgWeekdayToUi } from '@/features/agenda/utils/doctorAvailabilityWeekday'
+import { ApiError } from '@/lib/apiClient'
+import { formatPostgresLocalTimePtBr } from '@/lib/formatTimePtBr'
+
+function toastAvailabilityError(err: unknown, fallback: string) {
+  const detail = err instanceof ApiError ? err.message : null
+  toast.error(detail?.trim() ? detail : fallback)
+}
 
 const WEEKDAY_ROWS = [
   { id: 1, label: 'Segunda-feira' },
@@ -44,18 +59,28 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
   const [weekday, setWeekday] = React.useState(1)
   const [startTime, setStartTime] = React.useState('08:00')
   const [endTime, setEndTime] = React.useState('12:00')
-  const [slotMinutes, setSlotMinutes] = React.useState(30)
+  const [slotMinutes, setSlotMinutes] = React.useState(DOCTOR_AVAILABILITY_API_SLOT_DEFAULT)
   const [appType, setAppType] = React.useState<AppointmentType>('presencial')
   const [activeNew, setActiveNew] = React.useState(true)
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
+    const invalid = validateDoctorAvailabilityRequestInput({
+      weekday,
+      start_time: startTime,
+      end_time: endTime,
+      slot_minutes: slotMinutes,
+    })
+    if (invalid) {
+      toast.error(invalid)
+      return
+    }
     try {
       await createMut.mutateAsync({
         doctor_id: doctorId,
         weekday,
-        start_time: `${startTime}:00`,
-        end_time: `${endTime}:00`,
+        start_time: startTime,
+        end_time: endTime,
         slot_minutes: slotMinutes,
         appointment_type: appType,
         active: activeNew,
@@ -64,7 +89,10 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
       void listQuery.refetch()
     } catch (err) {
       console.error(err)
-      toast.error('Não foi possível salvar. Verifique os horários e permissões.')
+      toastAvailabilityError(
+        err,
+        'Não foi possível salvar. Verifique horários únicos ou se o backend permite o perfil médico em doctor_availability (RLS no Supabase).'
+      )
     }
   }
 
@@ -78,7 +106,7 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
       toast.success(next ? 'Registro ativado.' : 'Registro desativado.')
     } catch (err) {
       console.error(err)
-      toast.error('Não foi possível atualizar.')
+      toastAvailabilityError(err, 'Não foi possível atualizar.')
     }
   }
 
@@ -88,7 +116,7 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
       toast.success('Removido.')
     } catch (err) {
       console.error(err)
-      toast.error('Não foi possível excluir.')
+      toastAvailabilityError(err, 'Não foi possível excluir.')
     }
   }
 
@@ -101,8 +129,18 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
         Disponibilidade na agenda
       </div>
       <p className="mb-4 text-sm text-[var(--color-muted-foreground)]">
-        Grade semanal usada pela função de slots (Supabase). Ajuste conforme a clínica; exceções e
-        bloqueios ficam na própria agenda.
+        Contrato RiseUP{' '}
+        <a
+          href="https://do5wegrct3.apidog.io/criar-disponibilidade-23129823e0"
+          target="_blank"
+          rel="noreferrer"
+          className="text-[var(--color-accent)] underline-offset-2 hover:underline"
+        >
+          Criar disponibilidade
+        </a>
+        : dia 0–6 (domingo a sábado), horários HH:MM, slot {DOCTOR_AVAILABILITY_API_SLOT_MIN}–
+        {DOCTOR_AVAILABILITY_API_SLOT_MAX} min (padrão {DOCTOR_AVAILABILITY_API_SLOT_DEFAULT}). Exceções
+        ficam na agenda.
       </p>
 
       {listQuery.isError && (
@@ -128,23 +166,30 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
           </Select>
         </div>
         <div className="space-y-1">
-          <Label>Início</Label>
-          <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          <Label htmlFor="avail-start-hour">Horário inicial (24 h)</Label>
+          <TimeSelect24h id="avail-start" value={startTime} onChange={setStartTime} />
         </div>
         <div className="space-y-1">
-          <Label>Fim</Label>
-          <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          <Label htmlFor="avail-end-hour">Horário final (24 h)</Label>
+          <TimeSelect24h id="avail-end" value={endTime} onChange={setEndTime} />
         </div>
         <div className="space-y-1">
           <Label>Slot (min)</Label>
           <Input
             type="number"
-            min={5}
-            max={180}
-            step={5}
+            min={DOCTOR_AVAILABILITY_API_SLOT_MIN}
+            max={DOCTOR_AVAILABILITY_API_SLOT_MAX}
+            step={1}
             value={slotMinutes}
-            onChange={(e) => setSlotMinutes(Number(e.target.value))}
+            onChange={(e) => {
+              const n = Number(e.target.value)
+              if (Number.isNaN(n)) return
+              setSlotMinutes(n)
+            }}
           />
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Permitido pela API: {DOCTOR_AVAILABILITY_API_SLOT_MIN} a {DOCTOR_AVAILABILITY_API_SLOT_MAX}.
+          </p>
         </div>
         <div className="space-y-1">
           <Label>Tipo</Label>
@@ -198,13 +243,18 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
               </tr>
             )}
             {rows.map((r) => {
-              const dayLabel = WEEKDAY_ROWS.find((w) => w.id === r.weekday)?.label ?? `Dia ${r.weekday}`
+              const weekdayUi = pgWeekdayToUi(r.weekday)
+              const dayLabel =
+                weekdayUi !== null
+                  ? (WEEKDAY_ROWS.find((w) => w.id === weekdayUi)?.label ?? `${r.weekday}`)
+                  : String(r.weekday)
               const typ = r.appointment_type ?? 'presencial'
               return (
                 <tr key={r.id} className="border-b border-[var(--color-border)]/70 last:border-0">
                   <td className="py-2 pr-2">{dayLabel}</td>
-                  <td className="py-2 pr-2 font-mono text-xs">
-                    {(r.start_time ?? '').slice(0, 5)} – {(r.end_time ?? '').slice(0, 5)}
+                  <td className="py-2 pr-2 font-mono text-xs tabular-nums">
+                    {formatPostgresLocalTimePtBr(r.start_time)} –{' '}
+                    {formatPostgresLocalTimePtBr(r.end_time)}
                   </td>
                   <td className="py-2 pr-2">{r.slot_minutes ?? '—'}</td>
                   <td className="py-2 pr-2">{APPOINTMENT_TYPE_LABELS[typ]}</td>

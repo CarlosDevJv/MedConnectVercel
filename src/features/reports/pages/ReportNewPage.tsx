@@ -29,7 +29,7 @@ export function ReportNewPage() {
       { patient_id: p.id, status: 'draft' },
       {
         onSuccess: (report) => {
-          toast.success('Rascunho criado. Continue editando o laudo.')
+          toast.success('Laudo criado. Continue editando.')
           navigate(`/app/relatorios/${report.id}/editar`, { replace: true })
         },
         onError: () => {

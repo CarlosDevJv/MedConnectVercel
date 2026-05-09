@@ -3,11 +3,10 @@ import {
   BarChart3,
   Bell,
   Calendar,
+  Clock,
   FileText,
-  Headset,
   HelpCircle,
   LayoutDashboard,
-  ListOrdered,
   LogOut,
   Menu,
   MessageSquare,
@@ -23,7 +22,6 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useOptionalInAppNotifications } from '@/app/notifications/InAppNotificationsContext'
-import { SupportChatDialog } from '@/app/components/SupportChatDialog'
 import { RolelessBanner } from '@/app/layouts/RolelessBanner'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -35,7 +33,7 @@ import {
   AGENDA_ROLES,
   ANALYTICS_ROLES,
   COMMUNICATIONS_ROLES,
-  DOCTOR_MANAGEMENT_ROLES,
+  DOCTOR_DIRECTORY_ROLES,
   PATIENT_READ_ROLES,
   REPORT_ROLES,
   SECRETARIA_MANAGEMENT_ROLES,
@@ -46,13 +44,16 @@ import { cn } from '@/lib/cn'
 
 const SIDEBAR_STORAGE_KEY = 'mediconnect.sidebar'
 
+/** Documentação oficial RiseUP/publicada para o contrato REST deste aplicativo */
+const RISEUP_APIDOG_URL = 'https://do5wegrct3.apidog.io'
+
 const DROPDOWN_PANEL_CLASS =
   'z-50 min-w-[260px] max-w-[calc(100vw-2rem)] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-xl'
 
 const HEADER_ICON_BTN_CLASS =
   'grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)] text-[var(--color-muted-foreground)] outline-none transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]/35'
 
-function HeaderIconActions({ onOpenSupportChat }: { onOpenSupportChat: () => void }) {
+function HeaderIconActions() {
   const navigate = useNavigate()
   const notifications = useOptionalInAppNotifications()
 
@@ -170,13 +171,15 @@ function HeaderIconActions({ onOpenSupportChat }: { onOpenSupportChat: () => voi
             </div>
             <DropdownMenu.Item
               className="cursor-pointer rounded-[6px] px-3 py-2.5 text-sm outline-none hover:bg-[var(--color-accent-soft)] focus:bg-[var(--color-accent-soft)]"
-              onSelect={() => onOpenSupportChat()}
+              onSelect={() => {
+                window.open(RISEUP_APIDOG_URL, '_blank', 'noopener,noreferrer')
+              }}
             >
-              Abrir chat de atendimento
+              Abrir documentação RiseUP (Apidog)
             </DropdownMenu.Item>
             <div className="px-3 py-3">
               <p className="text-xs leading-relaxed text-[var(--color-muted-foreground)]">
-                Fale com a equipe MediConnect pelo chat ao vivo.
+                Contrato HTTP público das operações usadas pelo app.
               </p>
             </div>
           </DropdownMenu.Content>
@@ -225,7 +228,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Stethoscope,
     label: 'Médicos',
     to: '/app/medicos',
-    roles: [...DOCTOR_MANAGEMENT_ROLES],
+    roles: [...DOCTOR_DIRECTORY_ROLES],
+  },
+  {
+    id: 'minha-disponibilidade',
+    icon: Clock,
+    label: 'Minha disponibilidade',
+    to: '/app/disponibilidade',
+    roles: ['medico'],
   },
   {
     id: 'secretarias',
@@ -239,13 +249,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     label: 'Agenda',
     to: '/app/agenda',
-    roles: [...AGENDA_ROLES],
-  },
-  {
-    id: 'waitlist',
-    icon: ListOrdered,
-    label: 'Fila de espera',
-    to: '/app/fila-de-espera',
     roles: [...AGENDA_ROLES],
   },
   {
@@ -277,7 +280,6 @@ export function AppShell() {
   const [expanded, setExpanded] = React.useState(getInitialExpanded)
   const [signingOut, setSigningOut] = React.useState(false)
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
-  const [supportChatOpen, setSupportChatOpen] = React.useState(false)
 
   const role = pickPrimaryRole(userInfo?.roles)
   const fullName = userInfo?.profile?.full_name ?? userInfo?.user?.email ?? 'Usuário'
@@ -379,15 +381,16 @@ export function AppShell() {
         </nav>
 
         <div className="shrink-0 space-y-1 border-t border-[var(--color-border)] p-2">
-          <button
-            type="button"
-            onClick={() => setSupportChatOpen(true)}
+          <a
+            href={RISEUP_APIDOG_URL}
+            target="_blank"
+            rel="noreferrer"
             className={sidebarSupportClass}
-            aria-label="Suporte"
+            aria-label="Documentação da API RiseUP (Apidog)"
           >
-            <Headset className="h-4 w-4 shrink-0 text-[var(--color-accent)]" />
-            {expanded && <span>Suporte</span>}
-          </button>
+            <FileText className="h-4 w-4 shrink-0 text-[var(--color-accent)]" />
+            {expanded && <span>API RiseUP</span>}
+          </a>
 
           {expanded ? (
             <div className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-2">
@@ -437,19 +440,16 @@ export function AppShell() {
             ))}
           </SheetBody>
           <div className="shrink-0 space-y-3 border-t border-[var(--color-border)] p-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-start gap-2"
-              aria-label="Suporte"
-              onClick={() => {
-                setMobileNavOpen(false)
-                setSupportChatOpen(true)
-              }}
+            <a
+              href={RISEUP_APIDOG_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-full items-center justify-start gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--color-muted)]/50"
+              onClick={() => setMobileNavOpen(false)}
             >
-              <Headset className="h-4 w-4" />
-              Suporte
-            </Button>
+              <FileText className="h-4 w-4 shrink-0" />
+              Documentação da API
+            </a>
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--color-accent-soft)] text-sm font-semibold text-[var(--color-accent)]">
                 {initials || 'U'}
@@ -499,7 +499,7 @@ export function AppShell() {
             <div className="hidden min-h-px flex-1 sm:block" />
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-              <HeaderIconActions onOpenSupportChat={() => setSupportChatOpen(true)} />
+              <HeaderIconActions />
               <div
                 className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-sm font-semibold text-[var(--color-accent)] sm:flex"
                 aria-hidden
@@ -532,7 +532,6 @@ export function AppShell() {
         </main>
       </div>
 
-      <SupportChatDialog open={supportChatOpen} onOpenChange={setSupportChatOpen} />
     </div>
   )
 }

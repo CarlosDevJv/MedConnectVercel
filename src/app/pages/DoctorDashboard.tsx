@@ -3,10 +3,10 @@ import {
   AlertTriangle,
   Calendar,
   CalendarDays,
+  Clock,
   ChevronRight,
   ClipboardList,
   FileText,
-  ListOrdered,
   MessageSquare,
   Plus,
   Search,
@@ -250,12 +250,12 @@ export function DoctorDashboard() {
         </div>
 
         <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
-          <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Laudos e prontuário</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Laudos</h2>
           <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-            Continue rascunhos, libere relatórios e abra prontuários sem sair do fluxo do consultório.
+            Continue rascunhos e libere relatórios (API `/rest/v1/reports`).
           </p>
           <div className="mt-6 flex min-h-[132px] flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-muted)_0%,transparent_55%)] px-4 py-8 text-center">
-            <ClipboardList className="h-8 w-8 text-[var(--color-accent)]/80" aria-hidden />
+            <FileText className="h-8 w-8 text-[var(--color-accent)]/80" aria-hidden />
             <p className="max-w-[300px] text-sm leading-relaxed text-[var(--color-muted-foreground)]">
               {draftsQuery.isLoading
                 ? 'Carregando laudos…'
@@ -279,12 +279,6 @@ export function DoctorDashboard() {
                 Pacientes
               </Link>
             </Button>
-            <Button type="button" variant="outline" size="sm" className="gap-1.5" asChild>
-              <Link to="/app/fila-de-espera">
-                <ListOrdered className="h-4 w-4" />
-                Fila de espera
-              </Link>
-            </Button>
           </div>
         </div>
       </section>
@@ -298,17 +292,26 @@ export function DoctorDashboard() {
             <ModuleCard
               icon={Users}
               title="Pacientes"
-              description="Cadastro, edição e acesso rápido ao prontuário."
+              description="Cadastro e edição conforme API de pacientes."
               status="active"
               to="/app/pacientes"
             />
             <ModuleCard
               icon={Calendar}
               title="Agenda"
-              description="Sua disponibilidade e agendamentos do dia."
+              description="Calendário e agendamentos do dia."
               status="active"
               to="/app/agenda"
             />
+            {!medicoSemVinculo ? (
+              <ModuleCard
+                icon={Clock}
+                title="Minha disponibilidade"
+                description="Faixas semanais para cálculo de horários livres."
+                status="active"
+                to="/app/disponibilidade"
+              />
+            ) : null}
             <ModuleCard
               icon={FileText}
               title="Laudos"
@@ -322,13 +325,6 @@ export function DoctorDashboard() {
               description="Comunique-se com pacientes por SMS quando configurado."
               status="active"
               to="/app/mensagens"
-            />
-            <ModuleCard
-              icon={ListOrdered}
-              title="Fila de espera"
-              description="Lista de espera vinculada à sua agenda."
-              status="active"
-              to="/app/fila-de-espera"
             />
           </div>
         </div>
@@ -356,6 +352,14 @@ export function DoctorDashboard() {
               description="Calendário e detalhes de consultas"
               to="/app/agenda"
             />
+            {!medicoSemVinculo ? (
+              <QuickAction
+                icon={Clock}
+                label="Disponibilidade"
+                description="Grade semanal e slots"
+                to="/app/disponibilidade"
+              />
+            ) : null}
             <QuickAction
               icon={FileText}
               label="Laudos"
@@ -373,12 +377,6 @@ export function DoctorDashboard() {
               label="Mensagens"
               description="Canal com pacientes"
               to="/app/mensagens"
-            />
-            <QuickAction
-              icon={ListOrdered}
-              label="Fila de espera"
-              description="Pacientes em espera de vaga"
-              to="/app/fila-de-espera"
             />
           </div>
         </section>

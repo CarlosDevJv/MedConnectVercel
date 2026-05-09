@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label'
 import { ReportPreviewDialog } from '@/features/reports/components/ReportPreviewDialog'
 import { ReportRichText } from '@/features/reports/components/ReportRichText'
 import { reportToReportInput } from '@/features/reports/api'
+import { buildReportFallbackHtml } from '@/features/reports/utils/reportPreviewFallbackHtml'
 import { useReport, useUpdateReportMutation } from '@/features/reports/hooks'
-import type { ReportInput, ReportStatus } from '@/features/reports/types'
+import type { ReportInput } from '@/features/reports/types'
 import { useCanManagePatients } from '@/features/auth/useAuth'
 import { usePatient } from '@/features/patients/hooks'
 import { cn } from '@/lib/cn'
@@ -78,12 +79,12 @@ export function ReportEditorPage() {
     return <Navigate to="/app/relatorios" replace />
   }
 
-  function buildPayload(status: ReportStatus): ReportInput {
+  function buildPayload(): ReportInput {
     if (!report) throw new Error('Relatório não carregado')
     const due = datetimeLocalToIso(dueLocal)
     return {
       ...reportToReportInput(report, {
-        status,
+        status: 'draft',
         exam: exam.trim() || null,
         requested_by: requestedBy.trim() || null,
         cid_code: cidCode.trim() || null,
@@ -98,11 +99,11 @@ export function ReportEditorPage() {
     }
   }
 
-  function save(status: ReportStatus) {
+  function save() {
     if (!report) return
-    updateMutation.mutate(buildPayload(status), {
+    updateMutation.mutate(buildPayload(), {
       onSuccess: () => {
-        toast.success(status === 'completed' ? 'Laudo finalizado.' : 'Rascunho salvo.')
+        toast.success('Laudo salvo.')
       },
       onError: () => {
         toast.error('Não foi possível salvar o laudo.')
@@ -164,8 +165,7 @@ export function ReportEditorPage() {
           ) : null}
         </div>
         <p className="mt-1 font-mono text-xs text-[var(--color-muted-foreground)]">
-          Protocolo {report.order_number ?? report.id.slice(0, 8)} ·{' '}
-          {report.status === 'completed' ? 'Concluído' : 'Rascunho'}
+          Protocolo {report.order_number ?? report.id.slice(0, 8)}
         </p>
       </header>
 
@@ -280,7 +280,12 @@ export function ReportEditorPage() {
           type="button"
           variant="outline"
           onClick={() => {
-            setPreviewHtml(bodyRef.current.html || report.content_html || '')
+            const bodyHtml = bodyRef.current.html?.trim()
+              ? bodyRef.current.html
+              : (report.content_html?.trim() ? report.content_html : '')
+            setPreviewHtml(
+              bodyHtml || buildReportFallbackHtml({ ...report, patient_name: patientName })
+            )
             setPreviewOpen(true)
           }}
         >
@@ -291,16 +296,8 @@ export function ReportEditorPage() {
           Cancelar
         </Button>
         <div className="flex-1" />
-        <Button
-          type="button"
-          variant="outline"
-          loading={updateMutation.isPending}
-          onClick={() => save('draft')}
-        >
-          Salvar rascunho
-        </Button>
-        <Button type="button" loading={updateMutation.isPending} onClick={() => save('completed')}>
-          Finalizar laudo
+        <Button type="button" loading={updateMutation.isPending} onClick={() => save()}>
+          Salvar laudo
         </Button>
       </div>
 
@@ -309,7 +306,13 @@ export function ReportEditorPage() {
         onOpenChange={setPreviewOpen}
         title={`Laudo ${report.order_number ?? report.id.slice(0, 8)}`}
         subtitle={patientName}
-        html={previewHtml ?? report.content_html}
+        html={
+          previewHtml?.trim()
+            ? previewHtml
+            : report.content_html?.trim()
+              ? report.content_html
+              : buildReportFallbackHtml({ ...report, patient_name: patientName })
+        }
       />
     </div>
   )

@@ -96,6 +96,37 @@ function isLegacyError(value: unknown): value is LegacyErrorPayload {
   )
 }
 
+/** Erro típico do PostgREST/Supabase: `{ message, code, details?, hint? }` */
+function isSupabaseRestError(body: unknown): body is {
+  message: string
+  code?: string
+  details?: unknown
+  hint?: unknown
+} {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'message' in body &&
+    typeof (body as { message: unknown }).message === 'string' &&
+    (body as { message: string }).message.length > 0
+  )
+}
+
+function formatSupabaseRestMessage(body: {
+  message: string
+  details?: unknown
+  hint?: unknown
+}): string {
+  const parts = [body.message]
+  if (typeof body.details === 'string' && body.details.trim()) {
+    parts.push(body.details.trim())
+  }
+  if (typeof body.hint === 'string' && body.hint.trim()) {
+    parts.push(body.hint.trim())
+  }
+  return parts.join(' — ')
+}
+
 async function parseError(response: Response, fallback: string): Promise<ApiError> {
   let body: unknown
   try {
@@ -109,6 +140,15 @@ async function parseError(response: Response, fallback: string): Promise<ApiErro
       message: body.detail ?? body.title ?? fallback,
       status: response.status,
       fieldErrors: body.errors,
+      raw: body,
+    })
+  }
+
+  if (isSupabaseRestError(body)) {
+    return new ApiError({
+      message: formatSupabaseRestMessage(body),
+      status: response.status,
+      code: typeof body.code === 'string' ? body.code : undefined,
       raw: body,
     })
   }

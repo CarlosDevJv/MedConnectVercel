@@ -30,10 +30,9 @@ export function LandingModules() {
             <span className="inline-flex h-14 w-14 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] text-[var(--color-accent-solid)]">
               <FileText className="h-7 w-7" aria-hidden />
             </span>
-            <h3 className="mt-8 text-xl font-semibold text-[var(--color-foreground)]">Prontuário eletrônico</h3>
+            <h3 className="mt-8 text-xl font-semibold text-[var(--color-foreground)]">Laudos e pacientes</h3>
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">
-              Evoluções de consultas, anexos e buscas eficientes com trilhos de segurança e governança alinhada ao uso médico e
-              à LGPD.
+              Cadastro de pacientes e relatórios médicos conforme os recursos publicados na documentação RiseUP (Apidog).
             </p>
           </article>
         </div>

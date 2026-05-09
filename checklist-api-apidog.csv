@@ -23,23 +23,19 @@ id,metodo,path_ou_operacao,arquivo,exportado_em,publico_sem_bearer,doc_apidog_ll
 22,POST,/rest/v1/reports,src/features/reports/api.ts,createReport,nao,sim_reports
 23,PATCH,/rest/v1/reports?id=eq.{id},src/features/reports/api.ts,updateReport,nao,sim_reports
 24,GET,/rest/v1/patients?select=id,full_name&id=in.(...),src/features/reports/api.ts,batchPatientNamesForReports,nao,sim_pacientes
-25,GET,/rest/v1/clinical_consultations?*,src/features/emr/api.ts,listClinicalConsultations,nao,nao_listado_no_llms_txt
-26,GET,/rest/v1/clinical_consultations?* (detalhe),src/features/emr/api.ts,getClinicalConsultation,nao,nao_listado_no_llms_txt
-27,POST,/rest/v1/clinical_consultations,src/features/emr/api.ts,createClinicalConsultation,nao,nao_listado_no_llms_txt
-28,PATCH,/rest/v1/clinical_consultations?id=eq.{id},src/features/emr/api.ts,updateClinicalConsultation,nao,nao_listado_no_llms_txt
-29,GET,/rest/v1/doctors?select=id,full_name&id=in.(...),src/features/emr/api.ts,batchDoctorNames,nao,sim_medicos
-30,POST,/functions/v1/send-sms,src/features/communications/api.ts,sendSms,nao,sim_sms_ver_notas_503
-31,GET,/rest/v1/sms_logs?*,src/features/communications/api.ts,listSmsLogs,nao,parcial_historico_nao_no_indice
-32,GET,/rest/v1/appointments?*,src/features/agenda/api.ts,listAppointments,nao,sim_agendamentos
-33,POST,/rest/v1/appointments,src/features/agenda/api.ts,createAppointment,nao,sim_agendamentos
-34,PATCH,/rest/v1/appointments?id=eq.{id},src/features/agenda/api.ts,updateAppointment,nao,sim_agendamentos
-35,POST,/functions/v1/get-available-slots,src/features/agenda/api.ts,postGetAvailableSlots,nao,sim_agendamentos_slots
-36,GET,/rest/v1/doctor_availability?*,src/features/agenda/api.ts,listDoctorAvailability,nao,sim_disponibilidade
-37,POST,/rest/v1/doctor_availability,src/features/agenda/api.ts,createDoctorAvailability,nao,sim_disponibilidade
-38,PATCH,/rest/v1/doctor_availability?id=eq.{id},src/features/agenda/api.ts,updateDoctorAvailability,nao,sim_disponibilidade
-39,DELETE,/rest/v1/doctor_availability?id=eq.{id},src/features/agenda/api.ts,deleteDoctorAvailability,nao,sim_disponibilidade
-40,GET,/rest/v1/doctor_exceptions?*,src/features/agenda/api.ts,listDoctorExceptions,nao,sim_disponibilidade_excecoes
-41,POST,/rest/v1/doctor_exceptions,src/features/agenda/api.ts,createDoctorException,nao,sim_disponibilidade_excecoes
-42,GET,/rest/v1/patients?select=id,full_name&id=in.(...),src/features/agenda/api.ts,batchPatientNames,nao,sim_pacientes
-43,GET|POST|PATCH|DELETE,/rest/v1/appointment_waitlist?*,src/features/agenda/api.ts,waitlist CRUD,nao,sim_fila_espera
-44,GET,/rest/v1/patients?select=id,phone_mobile,preferred_contact&id=in.(...),src/features/patients/api.ts,batchPatientContact,nao,sim_lembretes
+25,N/A,-,clinical_consultations/prontuario removidos (sem recurso equivalente na Apidog RiseUP ligada ao app),-,-,,-
+26,POST,/functions/v1/send-sms,src/features/communications/api.ts,sendSms,nao,sim_sms_ver_notas_503
+27,N/A,-,GET sms_logs removido do app (endpoint não garantido/doc Apidog pública para histórico),-,-,,-
+28,GET,/rest/v1/appointments?*,src/features/agenda/api.ts,listAppointments,nao,sim_agendamentos
+29,POST,/rest/v1/appointments,src/features/agenda/api.ts,createAppointment,nao,sim_agendamentos
+30,PATCH,/rest/v1/appointments?id=eq.{id},src/features/agenda/api.ts,updateAppointment,nao,sim_agendamentos
+31,POST,/functions/v1/get-available-slots,src/features/agenda/api.ts,postGetAvailableSlots,nao,sim_agendamentos_slots
+32,GET,/rest/v1/doctor_availability?*,src/features/agenda/api.ts,listDoctorAvailability,nao,sim_disponibilidade
+33,POST,/rest/v1/doctor_availability,src/features/agenda/api.ts,createDoctorAvailability,nao,sim_disponibilidade
+34,PATCH,/rest/v1/doctor_availability?id=eq.{id},src/features/agenda/api.ts,updateDoctorAvailability,nao,sim_disponibilidade
+35,DELETE,/rest/v1/doctor_availability?id=eq.{id},src/features/agenda/api.ts,deleteDoctorAvailability,nao,sim_disponibilidade
+36,GET,/rest/v1/doctor_exceptions?*,src/features/agenda/api.ts,listDoctorExceptions,nao,sim_disponibilidade_excecoes
+37,POST,/rest/v1/doctor_exceptions,src/features/agenda/api.ts,createDoctorException,nao,sim_disponibilidade_excecoes
+38,GET,/rest/v1/patients?select=id,full_name&id=in.(...),src/features/agenda/api.ts,batchPatientNames,nao,sim_pacientes
+39,N/A,-,appointment_waitlist/fila de espera removidos do app (recurso não garantido na API RiseUP ligada ao app),-,-,,-
+40,GET,/rest/v1/patients?select=id,phone_mobile,preferred_contact&id=in.(...),src/features/patients/api.ts,batchPatientContact,nao,sim_lembretes

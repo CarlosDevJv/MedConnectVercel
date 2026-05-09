@@ -2,6 +2,7 @@ import { getEnv } from '@/env'
 import { ApiError, apiClient, parseContentRangeTotal } from '@/lib/apiClient'
 
 import type { ListPatientsParams, Patient, PatientList } from '@/features/patients/types'
+import { stripNonDigits } from '@/features/patients/utils/cpf'
 
 export interface RegisterPatientPayload {
   email: string
@@ -30,7 +31,11 @@ export async function registerPatient(payload: RegisterPatientPayload) {
   )
 }
 
-const ONLY_DIGITS = /^\d+$/
+/** Texto inteiro só com dígitos e máscara de CPF (evita tratar nome com números como CPF). */
+function looksLikeCpfSearch(trimmed: string): boolean {
+  if (!/^[\d\s.\-]+$/.test(trimmed)) return false
+  return stripNonDigits(trimmed).length >= 6
+}
 
 const PATIENT_LIST_SELECT =
   'id,full_name,social_name,cpf,email,phone_mobile,birth_date,sex,city,state,vip,rn_in_insurance,created_at,updated_at,created_by'
@@ -50,8 +55,13 @@ function buildPatientListPath(params: ListPatientsParams): string {
   usp.set('offset', String((page - 1) * pageSize))
 
   if (search) {
-    if (ONLY_DIGITS.test(search) && search.length >= 6) {
-      usp.set('cpf', `eq.${search}`)
+    if (looksLikeCpfSearch(search)) {
+      const digits = stripNonDigits(search).slice(0, 11)
+      if (digits.length >= 11) {
+        usp.set('cpf', `eq.${digits}`)
+      } else {
+        usp.set('cpf', `like.*${digits}*`)
+      }
     } else {
       const escaped = search.replace(/[%_]/g, (c) => `\\${c}`)
       usp.set('full_name', `ilike.*${escaped}*`)

@@ -14,10 +14,8 @@ import { PatientsListPage } from '@/features/patients/pages/PatientsListPage'
 import { RegisterPatientPage } from '@/features/patients/pages/RegisterPatientPage'
 import { AnalyticsDashboardPage } from '@/features/analytics/pages/AnalyticsDashboardPage'
 import { AgendaPage } from '@/features/agenda/pages/AgendaPage'
-import { WaitlistPage } from '@/features/agenda/pages/WaitlistPage'
+import { MyDoctorAvailabilityPage } from '@/features/agenda/pages/MyDoctorAvailabilityPage'
 import { CommunicationsPage } from '@/features/communications/pages/CommunicationsPage'
-import { ConsultationFormPage } from '@/features/emr/pages/ConsultationFormPage'
-import { PatientChartPage } from '@/features/emr/pages/PatientChartPage'
 import { ReportEditorPage } from '@/features/reports/pages/ReportEditorPage'
 import { ReportNewPage } from '@/features/reports/pages/ReportNewPage'
 import { ReportsListPage } from '@/features/reports/pages/ReportsListPage'
@@ -29,6 +27,7 @@ import {
   AGENDA_ROLES,
   ANALYTICS_ROLES,
   COMMUNICATIONS_ROLES,
+  DOCTOR_DIRECTORY_ROLES,
   DOCTOR_MANAGEMENT_ROLES,
   PATIENT_FORM_ROLES,
   PATIENT_READ_ROLES,
@@ -71,30 +70,6 @@ const appChildren: RouteObject[] = [
     ),
   },
   {
-    path: 'pacientes/:patientId/prontuario',
-    element: (
-      <RequireRole roles={[...PATIENT_READ_ROLES]}>
-        <PatientChartPage />
-      </RequireRole>
-    ),
-  },
-  {
-    path: 'pacientes/:patientId/prontuario/consulta/nova',
-    element: (
-      <RequireRole roles={[...PATIENT_READ_ROLES]}>
-        <ConsultationFormPage />
-      </RequireRole>
-    ),
-  },
-  {
-    path: 'pacientes/:patientId/prontuario/consulta/:consultationId',
-    element: (
-      <RequireRole roles={[...PATIENT_READ_ROLES]}>
-        <ConsultationFormPage />
-      </RequireRole>
-    ),
-  },
-  {
     path: 'indicadores',
     element: (
       <RequireRole roles={[...ANALYTICS_ROLES]}>
@@ -105,7 +80,7 @@ const appChildren: RouteObject[] = [
   {
     path: 'medicos',
     element: (
-      <RequireRole roles={[...DOCTOR_MANAGEMENT_ROLES]}>
+      <RequireRole roles={[...DOCTOR_DIRECTORY_ROLES]}>
         <DoctorsListPage />
       </RequireRole>
     ),
@@ -113,7 +88,7 @@ const appChildren: RouteObject[] = [
   {
     path: 'medicos/:id',
     element: (
-      <RequireRole roles={[...DOCTOR_MANAGEMENT_ROLES]}>
+      <RequireRole roles={[...DOCTOR_DIRECTORY_ROLES]}>
         <DoctorDetailsPage />
       </RequireRole>
     ),
@@ -135,18 +110,18 @@ const appChildren: RouteObject[] = [
     ),
   },
   {
-    path: 'agenda',
+    path: 'disponibilidade',
     element: (
-      <RequireRole roles={[...AGENDA_ROLES]}>
-        <AgendaPage />
+      <RequireRole roles={['medico']}>
+        <MyDoctorAvailabilityPage />
       </RequireRole>
     ),
   },
   {
-    path: 'fila-de-espera',
+    path: 'agenda',
     element: (
       <RequireRole roles={[...AGENDA_ROLES]}>
-        <WaitlistPage />
+        <AgendaPage />
       </RequireRole>
     ),
   },

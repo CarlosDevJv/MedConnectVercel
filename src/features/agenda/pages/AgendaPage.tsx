@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/useAuth'
 import { canUseMultiDoctorAgenda } from '@/lib/roleGroups'
@@ -11,7 +10,7 @@ import { CalendarDayView } from '@/features/agenda/components/CalendarDayView'
 import { CalendarMonthView } from '@/features/agenda/components/CalendarMonthView'
 import { CalendarWeekView } from '@/features/agenda/components/CalendarWeekView'
 import { NewAppointmentSheet } from '@/features/agenda/components/NewAppointmentSheet'
-import { useAppointmentsQuery } from '@/features/agenda/hooks'
+import { useAppointmentsQuery, useDoctorAvailabilityUnionWeekdaysQuery } from '@/features/agenda/hooks'
 import type {
   AgendaViewMode,
   AppointmentStatus,
@@ -34,7 +33,6 @@ const DAY_START = 7
 const DAY_END = 20
 
 export function AgendaPage() {
-  const navigate = useNavigate()
   const { userInfo } = useAuth()
   const calendarRef = React.useRef<HTMLDivElement>(null)
   const [viewMode, setViewMode] = React.useState<AgendaViewMode>('week')
@@ -190,15 +188,23 @@ export function AgendaPage() {
       if (e.key === 'c' || e.key === 'C') {
         calendarRef.current?.focus()
       }
-      if (e.key === 'f' || e.key === 'F') {
-        navigate('/app/fila-de-espera')
-      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [navigate])
+  }, [])
 
   const showNoDoctor = !resolvedDoctorId && selectedIds.size === 0
+
+  const availabilityScopeDoctorIds = React.useMemo((): string[] => {
+    if (resolvedDoctorId) return [resolvedDoctorId]
+    if (selectedIds.size === 0) return []
+    return [...selectedIds]
+  }, [resolvedDoctorId, selectedIds])
+
+  const availWeekdaysQuery = useDoctorAvailabilityUnionWeekdaysQuery(
+    availabilityScopeDoctorIds,
+    (viewMode === 'month' || viewMode === 'week') && availabilityScopeDoctorIds.length > 0
+  )
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
@@ -270,6 +276,9 @@ export function AgendaPage() {
               doctorNameById={doctorNameById}
               calendarRef={calendarRef}
               onSelectAppointment={openDetail}
+              weekdaysFilterActive={availabilityScopeDoctorIds.length > 0}
+              weekdayReady={availWeekdaysQuery.isFetched}
+              availableWeekdays={availWeekdaysQuery.data}
             />
           )}
 
@@ -289,6 +298,9 @@ export function AgendaPage() {
             <CalendarMonthView
               monthAnchor={anchorDate}
               appointments={visibleAppointments}
+              weekdaysFilterActive={availabilityScopeDoctorIds.length > 0}
+              weekdayReady={availWeekdaysQuery.isFetched}
+              availableWeekdays={availWeekdaysQuery.data}
               onSelectDay={(d) => {
                 setAnchorDate(d)
                 setViewMode('day')

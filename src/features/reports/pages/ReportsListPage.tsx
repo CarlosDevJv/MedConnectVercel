@@ -9,8 +9,7 @@ import {
   Search,
 } from 'lucide-react'
 import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -27,29 +26,20 @@ import {
 } from '@/components/ui/table'
 import { ReportDeliverySmsDialog } from '@/features/reports/components/ReportDeliverySmsDialog'
 import { ReportPreviewDialog } from '@/features/reports/components/ReportPreviewDialog'
-import { reportToReportInput, updateReport } from '@/features/reports/api'
-import { reportKeys, useReportsList } from '@/features/reports/hooks'
+import { useReportsList } from '@/features/reports/hooks'
 import type { EnrichedReport, ReportStatus } from '@/features/reports/types'
-import { REPORT_STATUS_LABELS } from '@/features/reports/types'
-import {
-  dateInputsToIsoRange,
-  presetLast7Days,
-  presetThisMonth,
-  presetToday,
-} from '@/features/reports/utils/dateRange'
 import { downloadReportsCsv } from '@/features/reports/utils/exportReportsCsv'
+import { buildReportFallbackHtml } from '@/features/reports/utils/reportPreviewFallbackHtml'
 import { formatDate, formatDateTime } from '@/features/patients/utils/format'
 import { useAuth } from '@/features/auth/useAuth'
-import { cn } from '@/lib/cn'
+import { usePatient } from '@/features/patients/hooks'
+import { ApiError } from '@/lib/apiClient'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
-function ymdFromIso(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+function describeReportsListLoadError(err: unknown): string | null {
+  if (err instanceof ApiError) return err.message
+  if (err instanceof Error && err.message.trim()) return err.message.trim()
+  return null
 }
 
 function isDueOverdue(dueAt: string | null, status: ReportStatus): boolean {
@@ -57,6 +47,13 @@ function isDueOverdue(dueAt: string | null, status: ReportStatus): boolean {
   const t = new Date(dueAt).getTime()
   if (Number.isNaN(t)) return false
   return t < Date.now()
+}
+
+function uuidFromQuery(raw: string | null): string | undefined {
+  const s = raw?.trim() ?? ''
+  if (!s) return undefined
+  const re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  return re.test(s) ? s : undefined
 }
 
 function filterReportsClient(items: EnrichedReport[], q: string): EnrichedReport[] {
@@ -73,7 +70,7 @@ function filterReportsClient(items: EnrichedReport[], q: string): EnrichedReport
 
 export function ReportsListPage() {
   const navigate = useNavigate()
-  const qc = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { userInfo } = useAuth()
   const userId = userInfo?.user.id ?? ''
   const roles = userInfo?.roles ?? []
@@ -82,15 +79,8 @@ export function ReportsListPage() {
     roles.includes('medico') &&
     !roles.some((r) => r === 'admin' || r === 'gestor')
 
-  const [statusTab, setStatusTab] = React.useState<ReportStatus>('draft')
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(20)
-
-  const [appliedFrom, setAppliedFrom] = React.useState<string | undefined>()
-  const [appliedTo, setAppliedTo] = React.useState<string | undefined>()
-
-  const [draftDateFrom, setDraftDateFrom] = React.useState('')
-  const [draftDateTo, setDraftDateTo] = React.useState('')
 
   const [search, setSearch] = React.useState('')
   const debouncedSearch = useDebouncedValue(search, 320)
@@ -98,35 +88,36 @@ export function ReportsListPage() {
   const [preview, setPreview] = React.useState<EnrichedReport | null>(null)
   const [deliveryReport, setDeliveryReport] = React.useState<EnrichedReport | null>(null)
 
-  const [prevReset, setPrevReset] = React.useState({
-    statusTab,
-    pageSize,
-    appliedFrom,
-    appliedTo,
-  })
-  if (
-    prevReset.statusTab !== statusTab ||
-    prevReset.pageSize !== pageSize ||
-    prevReset.appliedFrom !== appliedFrom ||
-    prevReset.appliedTo !== appliedTo
-  ) {
-    setPrevReset({ statusTab, pageSize, appliedFrom, appliedTo })
+  const filteredPatientId = React.useMemo(
+    () =>
+      uuidFromQuery(searchParams.get('patient_id')) ??
+      uuidFromQuery(searchParams.get('paciente')),
+    [searchParams]
+  )
+
+  React.useEffect(() => {
+    setPage(1)
+  }, [filteredPatientId])
+
+  const [prevReset, setPrevReset] = React.useState({ pageSize })
+  if (prevReset.pageSize !== pageSize) {
+    setPrevReset({ pageSize })
     setPage(1)
   }
 
   const listParams = React.useMemo(
     () => ({
-      status: statusTab,
       page,
       pageSize,
       order: 'created_at.desc',
-      ...(appliedFrom && appliedTo ? { createdFrom: appliedFrom, createdTo: appliedTo } : {}),
       ...(scopeReportsToCreator ? { created_by: userId } : {}),
+      ...(filteredPatientId ? { patient_id: filteredPatientId } : {}),
     }),
-    [statusTab, page, pageSize, appliedFrom, appliedTo, scopeReportsToCreator, userId]
+    [page, pageSize, scopeReportsToCreator, userId, filteredPatientId]
   )
 
   const query = useReportsList(listParams)
+  const patientBannerQuery = usePatient(filteredPatientId)
 
   const items = query.data?.items
   const total = query.data?.total ?? 0
@@ -134,48 +125,6 @@ export function ReportsListPage() {
     const list = items ?? []
     return filterReportsClient(list, debouncedSearch)
   }, [items, debouncedSearch])
-
-  const releaseMutation = useMutation({
-    mutationFn: async (r: EnrichedReport) =>
-      updateReport(r.id, reportToReportInput(r, { status: 'completed' })),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: reportKeys.all })
-      toast.success('Laudo liberado (concluído).')
-    },
-    onError: () => {
-      toast.error('Não foi possível liberar o laudo.')
-    },
-  })
-
-  function applyDateRange() {
-    const range = dateInputsToIsoRange(draftDateFrom, draftDateTo)
-    if (!range) {
-      toast.error('Informe duas datas válidas (início ≤ fim).')
-      return
-    }
-    setAppliedFrom(range.from)
-    setAppliedTo(range.to)
-  }
-
-  function clearDateRange() {
-    setDraftDateFrom('')
-    setDraftDateTo('')
-    setAppliedFrom(undefined)
-    setAppliedTo(undefined)
-  }
-
-  function applyPreset(which: 'today' | 'week' | 'month') {
-    const r =
-      which === 'today'
-        ? presetToday()
-        : which === 'week'
-          ? presetLast7Days()
-          : presetThisMonth()
-    setDraftDateFrom(ymdFromIso(r.from))
-    setDraftDateTo(ymdFromIso(r.to))
-    setAppliedFrom(r.from)
-    setAppliedTo(r.to)
-  }
 
   function exportCsv() {
     if (!filteredItems.length) {
@@ -202,28 +151,51 @@ export function ReportsListPage() {
           </Button>
         </div>
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Gerencie laudos por status, prazo e paciente. A busca refina os resultados já carregados
-          nesta página.
+          Listagem conforme filtros da API RiseUP (<code className="text-xs">patient_id</code>,{' '}
+          <code className="text-xs">created_by</code>). A busca só refina os registros já carregados nesta
+          página.
         </p>
       </header>
 
-      <div className="flex flex-wrap gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
-        {(['draft', 'completed'] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setStatusTab(s)}
-            className={cn(
-              'rounded-[var(--radius-md)] px-4 py-2 text-sm font-medium transition-colors',
-              statusTab === s
-                ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
-                : 'text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]/80'
-            )}
-          >
-            {REPORT_STATUS_LABELS[s]}
-          </button>
-        ))}
-      </div>
+      {filteredPatientId ? (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)]/35 px-4 py-3 text-sm"
+        >
+          <span className="text-[var(--color-foreground)]">
+            Filtrando laudos do paciente:{' '}
+            <strong>{patientBannerQuery.data?.full_name ?? 'Carregando…'}</strong>
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/app/pacientes/${filteredPatientId}`)}
+            >
+              Ver cadastro
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev)
+                    next.delete('patient_id')
+                    next.delete('paciente')
+                    return next
+                  },
+                  { replace: true }
+                )
+              }}
+            >
+              Limpar filtro
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end">
@@ -237,37 +209,6 @@ export function ReportsListPage() {
               placeholder="Protocolo, paciente, exame…"
               leftIcon={<Search className="h-4 w-4 shrink-0 opacity-70" />}
             />
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:items-end">
-            <div>
-              <span className="mb-1.5 block text-xs font-medium text-[var(--color-muted-foreground)]">
-                De
-              </span>
-              <Input type="date" value={draftDateFrom} onChange={(e) => setDraftDateFrom(e.target.value)} />
-            </div>
-            <div>
-              <span className="mb-1.5 block text-xs font-medium text-[var(--color-muted-foreground)]">
-                Até
-              </span>
-              <Input type="date" value={draftDateTo} onChange={(e) => setDraftDateTo(e.target.value)} />
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => applyPreset('today')}>
-              Hoje
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => applyPreset('week')}>
-              Semana
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => applyPreset('month')}>
-              Mês
-            </Button>
-            <Button type="button" size="sm" onClick={applyDateRange}>
-              Aplicar datas
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={clearDateRange}>
-              Limpar período
-            </Button>
           </div>
           <div className="flex flex-wrap gap-2 lg:ml-auto">
             <span className="sr-only" id="report-page-size-lbl">
@@ -295,7 +236,10 @@ export function ReportsListPage() {
       </div>
 
       {query.isError ? (
-        <ErrorState onRetry={() => query.refetch()} />
+        <ErrorState
+          detail={describeReportsListLoadError(query.error)}
+          onRetry={() => query.refetch()}
+        />
       ) : (
         <>
           <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -413,19 +357,6 @@ export function ReportsListPage() {
                                       </span>
                                     </DropdownMenu.Item>
                                     <DropdownMenu.Item
-                                      className={cn(
-                                        'cursor-pointer rounded-[6px] px-3 py-2 text-sm outline-none hover:bg-[var(--color-accent-soft)] focus:bg-[var(--color-accent-soft)]',
-                                        r.status === 'completed' && 'pointer-events-none opacity-40'
-                                      )}
-                                      disabled={r.status === 'completed'}
-                                      onSelect={() => {
-                                        if (r.status === 'completed') return
-                                        releaseMutation.mutate(r)
-                                      }}
-                                    >
-                                      Liberar laudo
-                                    </DropdownMenu.Item>
-                                    <DropdownMenu.Item
                                       className="cursor-pointer rounded-[6px] px-3 py-2 text-sm outline-none hover:bg-[var(--color-accent-soft)] focus:bg-[var(--color-accent-soft)]"
                                       onSelect={() => setDeliveryReport(r)}
                                     >
@@ -466,7 +397,13 @@ export function ReportsListPage() {
         }}
         title={preview ? `Laudo ${preview.order_number ?? preview.id.slice(0, 8)}` : 'Pré-visualização'}
         subtitle={preview?.patient_name}
-        html={preview?.content_html}
+        html={
+          preview
+            ? preview.content_html?.trim()
+              ? preview.content_html
+              : buildReportFallbackHtml(preview)
+            : null
+        }
       />
       <ReportDeliverySmsDialog
         report={deliveryReport}
@@ -479,7 +416,7 @@ export function ReportsListPage() {
   )
 }
 
-function ErrorState({ onRetry }: { onRetry: () => void }) {
+function ErrorState({ detail, onRetry }: { detail?: string | null; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-dashed border-[var(--color-destructive)]/40 bg-red-50/40 px-6 py-12 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-full bg-red-100 text-[var(--color-destructive)]">
@@ -488,9 +425,14 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       <h3 className="font-display text-lg text-[var(--color-foreground)]">
         Não conseguimos carregar os relatórios
       </h3>
-      <p className="max-w-[420px] text-sm text-[var(--color-muted-foreground)]">
-        Verifique sua conexão ou tente novamente.
-      </p>
+      <div className="max-w-[520px] space-y-2 text-sm text-[var(--color-muted-foreground)]">
+        <p>Confira sessão e rede; se persistir, o detalhe abaixo costuma indicar a causa no Supabase/postgREST.</p>
+        {detail ? (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-left font-mono text-xs text-red-950 break-words">
+            {detail}
+          </p>
+        ) : null}
+      </div>
       <Button type="button" variant="outline" onClick={onRetry}>
         <RefreshCcw className="h-4 w-4" />
         Tentar novamente

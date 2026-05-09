@@ -10,6 +10,7 @@ import type { EnrichedAppointment } from '@/features/agenda/types'
 import { useListDoctors } from '@/features/doctors/hooks'
 import { batchPatientContact } from '@/features/patients/api'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
+import { formatDateTimeShortNoYearPtBr } from '@/lib/formatTimePtBr'
 
 const WINDOW_MIN_MS = 22 * 60 * 60 * 1000
 const WINDOW_MAX_MS = 26 * 60 * 60 * 1000
@@ -108,12 +109,7 @@ async function runSweep(opts: {
 
     opts.inFlight.add(a.id)
     const who = a.patient_name ?? 'Paciente'
-    const when = new Date(a.scheduled_at).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    const when = formatDateTimeShortNoYearPtBr(a.scheduled_at)
     const body = `Olá ${who}, lembrete automático: consulta amanhã (${when}). MediConnect.`
 
     try {

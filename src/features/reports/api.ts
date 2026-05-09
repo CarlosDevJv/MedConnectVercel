@@ -1,3 +1,9 @@
+/**
+ * Lista e CRUD `/rest/v1/reports`.
+ * Lista (filtros, enum de status): https://do5wegrct3.apidog.io/listar-relat%C3%B3rios-m%C3%A9dicos-23131760e0
+ * — apenas os query params da spec: `patient_id`, `status`, `created_by`, `order`;
+ * paginação via PostgREST `limit`/`offset` + Prefer count.
+ */
 import { ApiError, apiClient, parseContentRangeTotal } from '@/lib/apiClient'
 
 import type {
@@ -25,9 +31,6 @@ function buildListReportsPath(params: ListReportsParams): string {
   if (params.patient_id) usp.set('patient_id', `eq.${params.patient_id}`)
   if (params.status) usp.set('status', `eq.${params.status}`)
   if (params.created_by) usp.set('created_by', `eq.${params.created_by}`)
-  if (params.createdFrom && params.createdTo) {
-    usp.set('and', `(created_at.gte.${params.createdFrom},created_at.lte.${params.createdTo})`)
-  }
 
   return `/rest/v1/reports?${usp.toString()}`
 }
@@ -46,7 +49,7 @@ export async function listReports(params: ListReportsParams = {}): Promise<Repor
 export async function getReport(id: string): Promise<Report> {
   const usp = new URLSearchParams({
     id: `eq.${id}`,
-    select: '*',
+    select: REPORT_SELECT,
     limit: '1',
   })
   const rows = await apiClient.get<Report[]>(`/rest/v1/reports?${usp.toString()}`)

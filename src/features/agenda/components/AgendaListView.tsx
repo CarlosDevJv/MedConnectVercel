@@ -5,6 +5,7 @@ import {
   type AppointmentStatus,
   type EnrichedAppointment,
 } from '@/features/agenda/types'
+import { formatTimePtBr } from '@/lib/formatTimePtBr'
 import { cn } from '@/lib/cn'
 
 export interface AgendaListViewProps {
@@ -76,8 +77,7 @@ export function AgendaListView({
                   {start.toLocaleDateString('pt-BR')}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  {start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} –{' '}
-                  {end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  {formatTimePtBr(start)} – {formatTimePtBr(end)}
                 </td>
                 <td className="px-4 py-3 font-medium">{a.patient_name}</td>
                 <td className="px-4 py-3 text-[var(--color-muted-foreground)]">

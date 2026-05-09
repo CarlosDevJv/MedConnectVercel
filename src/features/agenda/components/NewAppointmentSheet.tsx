@@ -21,17 +21,21 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { AppointmentAvailabilityDatePicker } from '@/features/agenda/components/AppointmentAvailabilityDatePicker'
 import {
-  useAvailableSlotsDayQuery,
   useCreateAppointmentMutation,
   useCreateBlockExceptionMutation,
+  useResolvedAppointmentFormSlots,
 } from '@/features/agenda/hooks'
 import type { AppointmentType, ScheduleIntent } from '@/features/agenda/types'
 import { SCHEDULE_INTENT_LABELS } from '@/features/agenda/types'
 import { combineDateAndTime } from '@/features/agenda/utils/calendar'
+import { DOCTOR_AVAILABILITY_API_SLOT_DEFAULT } from '@/features/agenda/utils/doctorAvailabilityOpenApi'
 import type { Doctor } from '@/features/doctors/types'
 import { listPatients } from '@/features/patients/api'
+import { ApiError } from '@/lib/apiClient'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
+import { formatPostgresLocalTimePtBr } from '@/lib/formatTimePtBr'
 import { useQuery } from '@tanstack/react-query'
 
 function intentToAppointmentType(intent: ScheduleIntent): AppointmentType {
@@ -39,12 +43,17 @@ function intentToAppointmentType(intent: ScheduleIntent): AppointmentType {
   return 'presencial'
 }
 
+function describeSlotsQueryError(err: unknown): string | null {
+  if (err instanceof ApiError) return err.message
+  if (err instanceof Error && err.message.trim()) return err.message.trim()
+  return null
+}
+
 interface FormValues {
   doctor_id: string
   patient_id: string
   date: string
   time: string
-  duration_minutes: number
   notes: string
 }
 
@@ -87,7 +96,6 @@ export function NewAppointmentSheet({
       patient_id: '',
       date: defaultDate,
       time: '',
-      duration_minutes: 30,
       notes: '',
     },
   })
@@ -98,12 +106,26 @@ export function NewAppointmentSheet({
   const timeVal = useWatch({ control, name: 'time' })
   const appointmentType = intentToAppointmentType(intent)
 
-  const slotsQuery = useAvailableSlotsDayQuery(
-    doctorId || undefined,
-    dateVal,
+  const {
+    slotItems,
+    slotsLoading,
+    slotsError,
+    usedAvailabilityFallback,
+    slotsQueryError,
+  } = useResolvedAppointmentFormSlots({
+    sheetOpen: open,
+    calendarEnabled: !blockAgenda,
+    doctorId: doctorId || undefined,
+    dateISO: dateVal,
     appointmentType,
-    open && !!doctorId && !!dateVal && !blockAgenda
-  )
+  })
+
+  React.useEffect(() => {
+    if (!timeVal) return
+    if (!slotItems.some((s) => s.time === timeVal)) {
+      setValue('time', '')
+    }
+  }, [doctorId, dateVal, timeVal, slotItems, setValue])
 
   const patientsSearch = useQuery({
     queryKey: ['agenda', 'patient-search', debouncedPatient],
@@ -148,12 +170,17 @@ export function NewAppointmentSheet({
       return
     }
     const scheduled_at = combineDateAndTime(values.date, values.time)
+    const slot = slotItems.find((s) => s.time === values.time)
+    const durationMinutes =
+      typeof slot?.duration_minutes === 'number' && Number.isFinite(slot.duration_minutes)
+        ? slot.duration_minutes
+        : DOCTOR_AVAILABILITY_API_SLOT_DEFAULT
     try {
       await createMut.mutateAsync({
         doctor_id: values.doctor_id,
         patient_id: values.patient_id,
         scheduled_at,
-        duration_minutes: values.duration_minutes,
+        duration_minutes: durationMinutes,
         status: 'requested',
         created_by: userId,
         appointment_type: appointmentType,
@@ -168,7 +195,6 @@ export function NewAppointmentSheet({
     }
   }
 
-  const slotItems = (slotsQuery.data ?? []).filter((s) => s.available)
   const activeDoctors = doctors.filter((d) => d.active !== false)
 
   const selectedPatientLabel = patientsSearch.data?.items.find((p) => p.id === patientId)?.full_name
@@ -236,8 +262,21 @@ export function NewAppointmentSheet({
               </div>
 
               <div className="space-y-2">
-                <Label>Data</Label>
-                <Input type="date" {...register('date', { required: true })} />
+                <Label htmlFor="appt-date-hidden">Data</Label>
+                {blockAgenda ? (
+                  <Input id="appt-date-hidden" type="date" lang="pt-BR" {...register('date', { required: true })} />
+                ) : (
+                  <>
+                    <input id="appt-date-hidden" type="hidden" {...register('date', { required: true })} />
+                    <AppointmentAvailabilityDatePicker
+                      doctorId={doctorId || undefined}
+                      appointmentType={appointmentType}
+                      value={dateVal ?? ''}
+                      onChange={(iso) => setValue('date', iso, { shouldValidate: true, shouldDirty: true })}
+                      disabled={!doctorId}
+                    />
+                  </>
+                )}
               </div>
 
               {!blockAgenda && (
@@ -282,42 +321,46 @@ export function NewAppointmentSheet({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Horário</Label>
+                    <Label htmlFor="appt-time">Horário (24 h)</Label>
                     <Select
                       value={timeVal}
                       onValueChange={(v) => setValue('time', v)}
-                      disabled={slotsQuery.isLoading}
+                      disabled={slotsLoading}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="appt-time">
                         <SelectValue
-                          placeholder={slotsQuery.isLoading ? 'Carregando…' : 'Escolha o horário'}
+                          placeholder={slotsLoading ? 'Carregando…' : 'Escolha o horário'}
                         />
                       </SelectTrigger>
                       <SelectContent>
                         {slotItems.map((s) => (
                           <SelectItem key={`${s.datetime ?? s.date ?? ''}-${s.time}`} value={s.time}>
-                            {s.time}
+                            {formatPostgresLocalTimePtBr(s.time)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {slotsQuery.isError && (
-                      <p className="text-xs text-amber-700">
-                        Não foi possível carregar os slots. Verifique a data e o profissional.
+                    {usedAvailabilityFallback && slotItems.length > 0 && (
+                      <p className="text-xs text-[var(--color-muted-foreground)]">
+                        Horários conforme a disponibilidade cadastrada do profissional.
                       </p>
                     )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duração (min)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      min={10}
-                      max={480}
-                      step={10}
-                      {...register('duration_minutes', { valueAsNumber: true })}
-                    />
+                    {slotsError && slotItems.length === 0 && !slotsLoading && (
+                      <p className="text-xs text-amber-800">
+                        <span className="font-medium">
+                          Serviço de slots indisponível ou sem retorno neste momento.
+                        </span>{' '}
+                        {describeSlotsQueryError(slotsQueryError) ?? (
+                          <>Confira disponibilidade do médico no cadastro ou tente mais tarde.</>
+                        )}
+                      </p>
+                    )}
+                    {!slotsLoading && !slotsError && slotItems.length === 0 && !!doctorId && !!dateVal && (
+                      <p className="text-xs text-[var(--color-muted-foreground)]">
+                        Nenhum horário livre neste dia para o tipo de agenda e médico escolhidos. Ajuste a
+                        data ou cadastre disponibilidade.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">

@@ -1,16 +1,5 @@
 import * as React from 'react'
-import {
-  BarChart3,
-  Calendar,
-  ChevronRight,
-  FileText,
-  MessageSquare,
-  Plus,
-  Search,
-  ShieldCheck,
-  Stethoscope,
-  Users,
-} from 'lucide-react'
+import { Calendar, ChevronRight, MessageSquare, Plus, Search, Stethoscope, Users } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
@@ -19,7 +8,6 @@ import { QuickAction } from '@/app/components/QuickAction'
 import { StatCard } from '@/app/components/StatCard'
 import {
   formatDatePill,
-  formatLastSignIn,
   formatTimeSlot,
   getGreeting,
   statusPillClass,
@@ -51,8 +39,8 @@ function useDoctorCount() {
   })
 }
 
-export function AdminDashboard() {
-  const { userInfo, session } = useAuth()
+export function SecretariaDashboard() {
+  const { userInfo } = useAuth()
   const navigate = useNavigate()
 
   const displayName =
@@ -62,10 +50,6 @@ export function AdminDashboard() {
 
   const patientQuery = usePatientCount()
   const doctorQuery = useDoctorCount()
-
-  const lastSignIn = formatLastSignIn(
-    (session?.user as { last_sign_in_at?: string } | undefined)?.last_sign_in_at
-  )
 
   const todayRange = React.useMemo(() => {
     const d = new Date()
@@ -79,8 +63,10 @@ export function AdminDashboard() {
 
   const todayAppointments = React.useMemo(() => {
     const list = apptQuery.data ?? []
-    return [...list].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).slice(0, 8)
+    return [...list].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).slice(0, 10)
   }, [apptQuery.data])
+
+  const consultasHoje = apptQuery.data?.length ?? 0
 
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
@@ -88,13 +74,13 @@ export function AdminDashboard() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
-              Painel operacional
+              Início — recepção
             </p>
             <h1 className="text-3xl font-semibold leading-tight tracking-tight text-[var(--color-foreground)] sm:text-[2.15rem]">
               {getGreeting()}, {displayName}.
             </h1>
             <p className="max-w-xl text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-              Visão geral clínica e operação do dia.
+              Agenda do dia, cadastro de pacientes e médicos da clínica.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
@@ -129,7 +115,12 @@ export function AdminDashboard() {
           loading={doctorQuery.isLoading}
           icon={Stethoscope}
         />
-        <StatCard label="Último acesso" value={lastSignIn} icon={ShieldCheck} />
+        <StatCard
+          label="Consultas hoje"
+          value={apptQuery.isLoading ? undefined : consultasHoje}
+          loading={apptQuery.isLoading}
+          icon={Calendar}
+        />
       </section>
 
       <section className="animate-fade-in-up-delay-2">
@@ -140,7 +131,7 @@ export function AdminDashboard() {
               to="/app/agenda"
               className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-accent)] hover:underline"
             >
-              Ver agenda
+              Ver agenda completa
               <ChevronRight className="h-4 w-4" />
             </Link>
           </header>
@@ -196,63 +187,43 @@ export function AdminDashboard() {
       <div className="grid gap-6 xl:grid-cols-[1fr_300px] animate-fade-in-up-delay-3">
         <section className="flex flex-col gap-4">
           <header className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Módulos do sistema</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Atalhos</h2>
           </header>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <ModuleCard
               icon={Users}
               title="Pacientes"
-              description="Cadastre, edite, busque e gerencie os pacientes da clínica."
+              description="Cadastro, busca e edição de pacientes."
               status="active"
               to="/app/pacientes"
             />
             <ModuleCard
               icon={Stethoscope}
               title="Médicos"
-              description="Gerencie o cadastro e a disponibilidade dos médicos."
+              description="Lista e dados dos médicos da clínica."
               status="active"
               to="/app/medicos"
             />
             <ModuleCard
               icon={Calendar}
               title="Agenda"
-              description="Agende, reagende e cancele consultas com facilidade."
+              description="Consultas do dia e agendamentos."
               status="active"
               to="/app/agenda"
             />
             <ModuleCard
-              icon={FileText}
-              title="Relatórios médicos"
-              description="Laudos e relatórios médicos (Reports na API RiseUP)."
-              status="active"
-              to="/app/relatorios"
-            />
-            <ModuleCard
-              icon={BarChart3}
-              title="Indicadores"
-              description="Métricas agregadas a partir dos agendamentos (endpoints documentados)."
-              status="active"
-              to="/app/indicadores"
-            />
-            <ModuleCard
               icon={MessageSquare}
               title="Mensagens"
-              description="SMS via Twilio para lembretes e avisos; entrega de laudo por SMS a partir da lista de relatórios."
+              description="SMS e comunicação com pacientes."
               status="active"
               to="/app/mensagens"
-            />
-            <ModuleCard
-              icon={ShieldCheck}
-              title="Usuários e permissões"
-              description="Controle de acesso, roles e convites de novos usuários."
-              status="coming-soon"
             />
           </div>
         </section>
 
         <section className="flex flex-col gap-4">
           <header>
-            <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Atalhos</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Ações rápidas</h2>
           </header>
           <div className="flex flex-col gap-2">
             <QuickAction
@@ -264,20 +235,20 @@ export function AdminDashboard() {
             <QuickAction
               icon={Users}
               label="Lista de pacientes"
-              description="Busque ou filtre por CPF e nome"
+              description="Busque por nome ou CPF"
               to="/app/pacientes"
+            />
+            <QuickAction
+              icon={Stethoscope}
+              label="Médicos"
+              description="Diretório da clínica"
+              to="/app/medicos"
             />
             <QuickAction
               icon={Calendar}
               label="Agenda"
-              description="Calendário e agendamentos"
+              description="Calendário e horários"
               to="/app/agenda"
-            />
-            <QuickAction
-              icon={BarChart3}
-              label="Indicadores"
-              description="Métricas a partir da API de agendamentos"
-              to="/app/indicadores"
             />
           </div>
         </section>

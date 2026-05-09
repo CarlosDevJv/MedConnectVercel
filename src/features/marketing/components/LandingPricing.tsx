@@ -67,8 +67,7 @@ export function LandingPricing() {
               R$ 397<span className="text-2xl font-semibold text-[var(--color-muted-foreground)]"> /mês</span>
             </p>
             <p className="mt-4 text-[15px] text-[var(--color-muted-foreground)]">
-              Operações em ritmo forte com prontuário comunicação ampla relatórios clínicos e campanhas operacionais bem
-              rastreadas.
+              Operações em ritmo forte com pacientes, agenda, SMS e relatórios clínicos conforme a API RiseUP.
             </p>
             <ul className="mt-10 flex flex-1 flex-col gap-3 text-sm text-[var(--color-muted-foreground)]">
               <li className="flex gap-3">
@@ -77,7 +76,7 @@ export function LandingPricing() {
               </li>
               <li className="flex gap-3">
                 <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Prontuário eletrônico completo</span>
+                <span>Cadastro de pacientes e laudos (recursos documentados)</span>
               </li>
               <li className="flex gap-3">
                 <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
@@ -85,7 +84,7 @@ export function LandingPricing() {
               </li>
               <li className="flex gap-3">
                 <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Mensagens automatizadas com modelos</span>
+                <span>SMS transacional (contrato RiseUP)</span>
               </li>
               <li className="flex gap-3">
                 <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />

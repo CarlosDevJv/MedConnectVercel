@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -22,8 +21,9 @@ import {
 } from '@/components/ui/select'
 import { isSmsServiceDisabled, sendSms } from '@/features/communications/api'
 import { toE164Preferred } from '@/features/communications/utils/phone'
+import { AppointmentAvailabilityDatePicker } from '@/features/agenda/components/AppointmentAvailabilityDatePicker'
 import {
-  useAvailableSlotsDayQuery,
+  useResolvedAppointmentFormSlots,
   useUpdateAppointmentMutation,
 } from '@/features/agenda/hooks'
 import {
@@ -38,6 +38,11 @@ import { combineDateAndTime, toISODateString } from '@/features/agenda/utils/cal
 import { getPatient } from '@/features/patients/api'
 import { PREFERRED_CONTACT_LABELS, type PreferredContact } from '@/features/patients/types'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
+import {
+  formatDateTimePtBr,
+  formatPostgresLocalTimePtBr,
+  formatTimePtBr,
+} from '@/lib/formatTimePtBr'
 
 export interface AppointmentDetailDialogProps {
   appointment: EnrichedAppointment | null
@@ -108,12 +113,25 @@ export function AppointmentDetailDialog({
     }
   }, [appointment?.patient_id, open])
 
-  const slotsQuery = useAvailableSlotsDayQuery(
-    appointment?.doctor_id,
-    rescheduleDate,
-    typeDraft,
-    open && !!appointment && !!rescheduleDate
+  const canAct = !!(
+    appointment &&
+    appointment.status !== 'cancelled' &&
+    appointment.status !== 'completed'
   )
+  const { slotItems, slotsLoading, slotsError } = useResolvedAppointmentFormSlots({
+    sheetOpen: open,
+    calendarEnabled: canAct,
+    doctorId: appointment?.doctor_id,
+    dateISO: rescheduleDate,
+    appointmentType: typeDraft,
+  })
+
+  React.useEffect(() => {
+    if (!rescheduleTime) return
+    if (!slotItems.some((s) => s.time === rescheduleTime)) {
+      setRescheduleTime('')
+    }
+  }, [slotItems, rescheduleTime])
 
   function patchLocal(row: Appointment) {
     if (!appointment) return
@@ -178,6 +196,7 @@ export function AppointmentDetailDialog({
         appointmentType: typeDraft,
         fromDate: new Date(),
         maxDays: 21,
+        excludeAppointmentId: appointment.id,
       })
       if (!slot?.scheduled_at) {
         toast.error('Nenhum horário livre encontrado no período.')
@@ -209,13 +228,7 @@ export function AppointmentDetailDialog({
         description: 'Confirme com o paciente antes de usar outro canal.',
       })
     }
-    const when = new Date(appointment.scheduled_at).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    const when = formatDateTimePtBr(appointment.scheduled_at)
     const who = appointment.patient_name ?? 'Paciente'
     const doc = doctorName ?? 'seu profissional'
     const body = `Olá ${who}, lembrete: consulta em ${when} com ${doc}. MediConnect.`
@@ -261,8 +274,6 @@ export function AppointmentDetailDialog({
   const start = new Date(appointment.scheduled_at)
   const dur = appointment.duration_minutes ?? 30
   const end = new Date(start.getTime() + dur * 60_000)
-  const slotItems = (slotsQuery.data ?? []).filter((s) => s.available)
-  const canAct = appointment.status !== 'cancelled' && appointment.status !== 'completed'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -281,14 +292,7 @@ export function AppointmentDetailDialog({
           </p>
           <p>
             <span className="text-[var(--color-muted-foreground)]">Quando:</span>{' '}
-            {start.toLocaleString('pt-BR', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}{' '}
-            – {end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            {formatDateTimePtBr(start)} – {formatTimePtBr(end)}
           </p>
           <p>
             <span className="text-[var(--color-muted-foreground)]">Status:</span>{' '}
@@ -362,7 +366,7 @@ export function AppointmentDetailDialog({
           {appointment.last_reminder_sent_at && (
             <p className="text-xs text-[var(--color-muted-foreground)]">
               Último SMS registrado em{' '}
-              {new Date(appointment.last_reminder_sent_at).toLocaleString('pt-BR')}
+              {formatDateTimePtBr(appointment.last_reminder_sent_at)}
             </p>
           )}
 
@@ -388,35 +392,49 @@ export function AppointmentDetailDialog({
                 <CalendarClock className="h-3.5 w-3.5" />
                 Reagendar
               </p>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="flex flex-col gap-3">
                 <div className="space-y-1">
-                  <Label>Nova data</Label>
-                  <Input
-                    type="date"
+                  <Label htmlFor="reschedule-date-picker">Nova data</Label>
+                  <AppointmentAvailabilityDatePicker
+                    doctorId={appointment?.doctor_id}
+                    appointmentType={typeDraft}
                     value={rescheduleDate}
-                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    onChange={setRescheduleDate}
+                    disabled={!canAct}
+                    additionallyAllowedDatesIso={
+                      appointment ? [toISODateString(new Date(appointment.scheduled_at))] : undefined
+                    }
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Horário</Label>
+                  <Label htmlFor="reschedule-time">Horário (24 h)</Label>
                   <Select
                     value={rescheduleTime}
                     onValueChange={setRescheduleTime}
-                    disabled={slotsQuery.isLoading}
+                    disabled={slotsLoading}
                   >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={slotsQuery.isLoading ? 'Carregando…' : 'Escolha'}
-                      />
+                    <SelectTrigger id="reschedule-time">
+                      <SelectValue placeholder={slotsLoading ? 'Carregando…' : 'Escolha o horário'} />
                     </SelectTrigger>
                     <SelectContent>
                       {slotItems.map((s) => (
                         <SelectItem key={`${s.datetime ?? s.date ?? ''}-${s.time}`} value={s.time}>
-                          {s.time}
+                          {formatPostgresLocalTimePtBr(s.time)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {!slotsLoading && slotItems.length === 0 && rescheduleDate && (
+                    <p
+                      className={
+                        slotsError ? 'text-xs text-amber-800' : 'text-xs text-[var(--color-muted-foreground)]'
+                      }
+                    >
+                      {slotsError
+                        ? 'Serviço de slots indisponível e sem horários pela disponibilidade cadastrada nesta data.'
+                        : 'Nenhum horário livre nesta data para o tipo selecionado.'}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -441,8 +459,8 @@ export function AppointmentDetailDialog({
                 </Button>
               </div>
               <p className="text-[11px] text-[var(--color-muted-foreground)]">
-                O reagendamento automático busca a primeira vaga livre nos próximos 21 dias para o tipo{' '}
-                {APPOINTMENT_TYPE_LABELS[typeDraft]}.
+                O reagendamento automático usa só a disponibilidade cadastrada do médico nos próximos 21 dias para o tipo{' '}
+                {APPOINTMENT_TYPE_LABELS[typeDraft]}, respeitando horários já ocupados.
               </p>
             </div>
           )}

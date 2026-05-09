@@ -1,24 +1,30 @@
 import * as React from 'react'
 
+import { MonthCalendarGrid } from '@/features/agenda/components/MonthCalendarGrid'
 import type { EnrichedAppointment } from '@/features/agenda/types'
-import {
-  addDays,
-  startOfMonth,
-  startOfWeekMonday,
-  toISODateString,
-} from '@/features/agenda/utils/calendar'
+import { toISODateString } from '@/features/agenda/utils/calendar'
 import { cn } from '@/lib/cn'
 
 export interface CalendarMonthViewProps {
   monthAnchor: Date
   appointments: EnrichedAppointment[]
   onSelectDay?: (d: Date) => void
+  /** Quando verdadeiro e `weekdayReady`, só permite escolher dias cujo weekday está em `availableWeekdays`. */
+  weekdaysFilterActive?: boolean
+  /** Deve ficar true após a primeira resposta da query de disponibilidade (sucesso ou vazio). */
+  weekdayReady?: boolean
+  /** Dias da semana JS (0 = domingo … 6 = sábado) com agenda ativa nos médicos selecionados. */
+  availableWeekdays?: Set<number>
 }
 
-export function CalendarMonthView({ monthAnchor, appointments, onSelectDay }: CalendarMonthViewProps) {
-  const monthStart = startOfMonth(monthAnchor)
-  const gridStart = startOfWeekMonday(monthStart)
-
+export function CalendarMonthView({
+  monthAnchor,
+  appointments,
+  onSelectDay,
+  weekdaysFilterActive = false,
+  weekdayReady = false,
+  availableWeekdays,
+}: CalendarMonthViewProps) {
   const countsByDay = React.useMemo(() => {
     const map = new Map<string, number>()
     for (const a of appointments) {
@@ -28,47 +34,59 @@ export function CalendarMonthView({ monthAnchor, appointments, onSelectDay }: Ca
     return map
   }, [appointments])
 
-  const cells = React.useMemo(() => Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)), [gridStart])
+  const badgeByIso = React.useMemo(() => {
+    const map = new Map<string, React.ReactNode>()
+    countsByDay.forEach((n, iso) => {
+      if (n <= 0) return
+      map.set(
+        iso,
+        <span className="mt-auto rounded-full bg-[var(--color-accent-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-accent)]">
+          {n}
+        </span>
+      )
+    })
+    return map
+  }, [countsByDay])
 
   const labelMonth = monthAnchor.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
+  const filterApplied = weekdaysFilterActive && weekdayReady && availableWeekdays !== undefined
+
   return (
-    <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div
+      className={cn(
+        'rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4',
+        weekdaysFilterActive && weekdayReady && !availableWeekdays?.size && 'opacity-95'
+      )}
+    >
       <p className="mb-3 text-center font-display text-sm font-medium capitalize text-[var(--color-foreground)]">
         {labelMonth}
       </p>
-      <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase tracking-wide text-[var(--color-muted-foreground)]">
-        {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((w) => (
-          <span key={w}>{w}</span>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map((d) => {
-          const iso = toISODateString(d)
-          const inMonth = d.getMonth() === monthAnchor.getMonth()
-          const n = countsByDay.get(iso) ?? 0
-          return (
-            <button
-              key={iso}
-              type="button"
-              onClick={() => onSelectDay?.(d)}
-              className={cn(
-                'flex min-h-[52px] flex-col items-center rounded-lg border p-1 text-sm transition-colors',
-                inMonth
-                  ? 'border-[var(--color-border)] bg-[var(--color-muted)]/25 hover:bg-[var(--color-accent-soft)]/40'
-                  : 'border-transparent bg-transparent text-[var(--color-muted-foreground)] opacity-50'
-              )}
-            >
-              <span>{d.getDate()}</span>
-              {n > 0 && (
-                <span className="mt-auto rounded-full bg-[var(--color-accent-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-accent)]">
-                  {n}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+      {weekdaysFilterActive && weekdayReady && availableWeekdays && !availableWeekdays.size ? (
+        <p className="rounded-md bg-amber-50/90 px-2 py-2 text-center text-xs text-amber-950">
+          Nenhum dia de disponibilidade cadastrado para a seleção atual. Os dias ficam bloqueados até você
+          cadastrar horários nos perfis ou ajustar a seleção na barra lateral.
+        </p>
+      ) : (
+        <>
+          <MonthCalendarGrid
+            monthAnchor={monthAnchor}
+            isDaySelectable={(d) => {
+              if (!filterApplied) return true
+              const set = availableWeekdays!
+              if (!set.size) return false
+              return set.has(d.getDay())
+            }}
+            badgeByIso={badgeByIso}
+            onDayPress={(d) => onSelectDay?.(d)}
+          />
+          {weekdaysFilterActive && !weekdayReady && (
+            <p className="mt-2 text-center text-[10px] text-[var(--color-muted-foreground)]">
+              Carregando dias com agenda disponível…
+            </p>
+          )}
+        </>
+      )}
     </div>
   )
 }

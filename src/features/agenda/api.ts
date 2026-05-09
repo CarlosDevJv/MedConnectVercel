@@ -9,13 +9,11 @@ const APPOINTMENT_SELECT_MINIMAL =
 import type {
   Appointment,
   AppointmentStatus,
-  AppointmentWaitlist,
   AppointmentType,
   AvailableSlotItem,
   CreateAppointmentPayload,
   CreateDoctorAvailabilityPayload,
   CreateDoctorExceptionPayload,
-  CreateWaitlistPayload,
   DoctorAvailability,
   DoctorException,
   GetAvailableSlotsDayBody,
@@ -23,9 +21,14 @@ import type {
   GetAvailableSlotsResponse,
   ListAppointmentsParams,
   UpdateDoctorAvailabilityPayload,
-  UpdateWaitlistPayload,
-  WaitlistStatus,
 } from '@/features/agenda/types'
+import {
+  DOCTOR_AVAILABILITY_API_SLOT_DEFAULT,
+  DOCTOR_AVAILABILITY_API_SLOT_MAX,
+  DOCTOR_AVAILABILITY_API_SLOT_MIN,
+} from '@/features/agenda/utils/doctorAvailabilityOpenApi'
+import { uiWeekdayToPgEnum } from '@/features/agenda/utils/doctorAvailabilityWeekday'
+import { coerceUnknownSlotRows } from '@/features/agenda/utils/normalizeAvailableSlots'
 
 function buildListAppointmentsPath(params: ListAppointmentsParams, select: string): string {
   const usp = new URLSearchParams()
@@ -119,11 +122,13 @@ export async function postGetAvailableSlots(
     '/functions/v1/get-available-slots',
     body
   )
-  return res.slots ?? []
+  return coerceUnknownSlotRows(res.slots)
 }
 
 export async function listDoctorAvailability(params: {
   doctor_id?: string
+  /** Vários médicos (`doctor_id=in.(…)` PostgREST) — união das disponibilidades. */
+  doctorIds?: string[]
   weekday?: number
   active?: boolean
   appointment_type?: string
@@ -132,8 +137,13 @@ export async function listDoctorAvailability(params: {
   const usp = new URLSearchParams()
   usp.set('select', params.select ?? '*')
   usp.set('order', 'weekday.asc,start_time.asc')
-  if (params.doctor_id) usp.set('doctor_id', `eq.${params.doctor_id}`)
-  if (typeof params.weekday === 'number') usp.set('weekday', `eq.${params.weekday}`)
+  if (params.doctorIds?.length) {
+    usp.set('doctor_id', `in.(${params.doctorIds.join(',')})`)
+  } else if (params.doctor_id) {
+    usp.set('doctor_id', `eq.${params.doctor_id}`)
+  }
+  if (typeof params.weekday === 'number')
+    usp.set('weekday', `eq.${uiWeekdayToPgEnum(params.weekday)}`)
   if (typeof params.active === 'boolean') usp.set('active', `eq.${params.active}`)
   if (params.appointment_type) usp.set('appointment_type', `eq.${params.appointment_type}`)
   return apiClient.get<DoctorAvailability[]>(`/rest/v1/doctor_availability?${usp.toString()}`)
@@ -142,10 +152,31 @@ export async function listDoctorAvailability(params: {
 export async function createDoctorAvailability(
   payload: CreateDoctorAvailabilityPayload
 ): Promise<DoctorAvailability> {
+  const slot =
+    payload.slot_minutes === undefined ? DOCTOR_AVAILABILITY_API_SLOT_DEFAULT : payload.slot_minutes
+  if (
+    slot < DOCTOR_AVAILABILITY_API_SLOT_MIN ||
+    slot > DOCTOR_AVAILABILITY_API_SLOT_MAX ||
+    !Number.isInteger(slot)
+  ) {
+    throw new ApiError({
+      message: `slot_minutes deve ser inteiro entre ${DOCTOR_AVAILABILITY_API_SLOT_MIN} e ${DOCTOR_AVAILABILITY_API_SLOT_MAX}.`,
+      status: 400,
+    })
+  }
+  const body = {
+    doctor_id: payload.doctor_id,
+    weekday: uiWeekdayToPgEnum(payload.weekday),
+    start_time: payload.start_time,
+    end_time: payload.end_time,
+    slot_minutes: slot,
+    appointment_type: payload.appointment_type ?? 'presencial',
+    active: payload.active ?? true,
+  }
   const result = await apiClient.request<DoctorAvailability[]>({
     method: 'POST',
     path: '/rest/v1/doctor_availability',
-    body: payload,
+    body,
     options: { headers: { Prefer: 'return=representation' } },
   })
   const row = result.data?.[0]
@@ -216,53 +247,3 @@ export async function batchPatientNames(
   return Object.fromEntries(rows.map((r) => [r.id, r.full_name]))
 }
 
-/** GET /rest/v1/appointment_waitlist */
-export async function listAppointmentWaitlist(params: {
-  doctor_id?: string
-  status?: WaitlistStatus
-}): Promise<AppointmentWaitlist[]> {
-  const usp = new URLSearchParams()
-  usp.set('select', '*')
-  usp.set('order', 'priority.desc,created_at.asc')
-  if (params.doctor_id) usp.set('doctor_id', `eq.${params.doctor_id}`)
-  if (params.status) usp.set('status', `eq.${params.status}`)
-  return apiClient.get<AppointmentWaitlist[]>(`/rest/v1/appointment_waitlist?${usp.toString()}`)
-}
-
-export async function createWaitlistEntry(
-  payload: CreateWaitlistPayload
-): Promise<AppointmentWaitlist> {
-  const result = await apiClient.request<AppointmentWaitlist[]>({
-    method: 'POST',
-    path: '/rest/v1/appointment_waitlist',
-    body: payload,
-    options: { headers: { Prefer: 'return=representation' } },
-  })
-  const row = result.data?.[0]
-  if (!row) {
-    throw new ApiError({ message: 'Entrada na fila criada sem corpo', status: 201 })
-  }
-  return row
-}
-
-export async function updateWaitlistEntry(
-  id: string,
-  payload: UpdateWaitlistPayload
-): Promise<AppointmentWaitlist> {
-  const usp = new URLSearchParams({ id: `eq.${id}` })
-  const result = await apiClient.request<AppointmentWaitlist[]>({
-    method: 'PATCH',
-    path: `/rest/v1/appointment_waitlist?${usp.toString()}`,
-    body: payload,
-    options: { headers: { Prefer: 'return=representation' } },
-  })
-  if (!result.data?.length) {
-    throw new ApiError({ message: 'Registro da fila não encontrado', status: 404 })
-  }
-  return result.data[0]
-}
-
-export async function deleteWaitlistEntry(id: string): Promise<void> {
-  const usp = new URLSearchParams({ id: `eq.${id}` })
-  await apiClient.del(`/rest/v1/appointment_waitlist?${usp.toString()}`)
-}

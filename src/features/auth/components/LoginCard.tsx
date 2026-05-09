@@ -8,7 +8,6 @@ import { toast } from 'sonner'
 import { loginWithPassword } from '@/features/auth/api'
 import { BrandWordmark } from '@/features/auth/components/BrandWordmark'
 import { ForgotPasswordDialog } from '@/features/auth/components/ForgotPasswordDialog'
-import { GoogleIcon } from '@/features/auth/components/GoogleIcon'
 import { loginSchema, type LoginValues } from '@/features/auth/schemas'
 import { useAuth } from '@/features/auth/useAuth'
 import { Button } from '@/components/ui/button'
@@ -155,27 +154,7 @@ export function LoginCard() {
             </Button>
           </form>
 
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[var(--color-border)]" />
-            <span className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
-              ou
-            </span>
-            <div className="h-px flex-1 bg-[var(--color-border)]" />
-          </div>
-
-          <Button
-            variant="outline"
-            fullWidth
-            size="lg"
-            disabled
-            title="Em breve"
-            aria-label="Entrar com Google (em breve)"
-          >
-            <GoogleIcon className="h-[18px] w-[18px]" />
-            Entrar com Google
-          </Button>
-
-          <p className="mt-6 text-center text-xs text-[var(--color-muted-foreground)]">
+          <p className="mt-8 text-center text-xs text-[var(--color-muted-foreground)]">
             Primeira vez aqui? Crie sua conta para agendar consultas.
           </p>
 

@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   Building2,
   CalendarDays,
-  ClipboardList,
+  FileText,
   Heart,
   IdCard,
   Mail,
@@ -36,13 +36,19 @@ import {
   formatPatientCpf,
   formatPatientPhone,
 } from '@/features/patients/utils/format'
-import { useCanManagePatients } from '@/features/auth/useAuth'
+import { useAuth, useCanManagePatients } from '@/features/auth/useAuth'
+import { REPORT_ROLES } from '@/lib/roleGroups'
 import { ApiError } from '@/lib/apiClient'
+import type { UserRole } from '@/types/user'
 
 export function PatientDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const canManage = useCanManagePatients()
+  const { userInfo } = useAuth()
+  const canSeeReports = Boolean(
+    userInfo?.roles?.some((r) => REPORT_ROLES.includes(r as UserRole))
+  )
 
   const query = usePatient(id)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
@@ -100,14 +106,18 @@ export function PatientDetailsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(`/app/pacientes/${patient.id}/prontuario`)}
-          >
-            <ClipboardList className="h-4 w-4" />
-            Prontuário
-          </Button>
+          {canSeeReports ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                navigate(`/app/relatorios?patient_id=${encodeURIComponent(patient.id)}`)
+              }
+            >
+              <FileText className="h-4 w-4" />
+              Laudos
+            </Button>
+          ) : null}
           {canManage && (
           <>
             <Button
@@ -346,7 +356,7 @@ export function PatientDetailsPage() {
             )}
         </Card>
 
-        <Card title="Histórico" icon={<ClipboardList className="h-4 w-4" />} className="lg:col-span-2">
+        <Card title="Histórico" icon={<CalendarDays className="h-4 w-4" />} className="lg:col-span-2">
           <div className="grid gap-3 sm:grid-cols-2">
             <Row label="Cadastrado em" value={formatDateTime(patient.created_at)} />
             <Row label="Última atualização" value={formatDateTime(patient.updated_at)} />

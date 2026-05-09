@@ -9,6 +9,7 @@ import {
   minutesSinceMidnight,
   toISODateString,
 } from '@/features/agenda/utils/calendar'
+import { formatHourMarkPtBr, formatTimePtBr } from '@/lib/formatTimePtBr'
 import { cn } from '@/lib/cn'
 
 const ROW_PX = 22
@@ -55,6 +56,10 @@ export interface CalendarWeekViewProps {
   doctorNameById: Record<string, string>
   calendarRef?: React.RefObject<HTMLElement | null>
   onSelectAppointment?: (a: EnrichedAppointment) => void
+  /** Quando há médicos na agenda e dados carregados, colunas sem weekday na disponibilidade ficam menos destacadas. */
+  weekdaysFilterActive?: boolean
+  weekdayReady?: boolean
+  availableWeekdays?: Set<number>
 }
 
 export function CalendarWeekView({
@@ -65,6 +70,9 @@ export function CalendarWeekView({
   doctorNameById,
   calendarRef,
   onSelectAppointment,
+  weekdaysFilterActive = false,
+  weekdayReady = false,
+  availableWeekdays,
 }: CalendarWeekViewProps) {
   const days = React.useMemo(() => eachDayInWeek(weekStart), [weekStart])
   const startMin = dayStartHour * 60
@@ -87,7 +95,7 @@ export function CalendarWeekView({
           const m = startMin + i * GRID_SLOT_MINUTES
           const h = Math.floor(m / 60)
           const mm = m % 60
-          const label = mm === 0 ? `${String(h).padStart(2, '0')}:00` : ''
+          const label = mm === 0 ? formatHourMarkPtBr(h, 0) : ''
           return (
             <div
               key={i}
@@ -108,10 +116,20 @@ export function CalendarWeekView({
             return toISODateString(d) === iso
           })
 
+          const filterOn =
+            weekdaysFilterActive &&
+            weekdayReady &&
+            availableWeekdays !== undefined &&
+            availableWeekdays.size > 0
+          const colMuted = filterOn && !availableWeekdays.has(day.getDay())
+
           return (
             <div
               key={iso}
-              className="relative min-w-[100px] flex-1 border-r border-[var(--color-border)] last:border-r-0"
+              className={cn(
+                'relative min-w-[100px] flex-1 border-r border-[var(--color-border)] last:border-r-0',
+                colMuted && 'bg-[var(--color-muted)]/10 opacity-[0.88]'
+              )}
             >
               <div className="flex h-11 shrink-0 flex-col items-center justify-center border-b border-[var(--color-border)] bg-[var(--color-muted)]/25 px-1">
                 <span className="text-[11px] font-medium capitalize text-[var(--color-muted-foreground)]">
@@ -141,7 +159,7 @@ export function CalendarWeekView({
                   const h = (dur / GRID_SLOT_MINUTES) * ROW_PX
                   const docName = doctorNameById[a.doctor_id] ?? 'Profissional'
                   const end = new Date(start.getTime() + dur * 60_000)
-                  const timeRange = `${start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                  const timeRange = `${formatTimePtBr(start)} – ${formatTimePtBr(end)}`
 
                   return (
                     <button

@@ -31,8 +31,18 @@ export function useResolvedDoctorId() {
     return medicoSomenteListaUnica ? doctorsList[0]?.id : undefined
   }, [linkedDoctorId, doctorsList, userId, roles, multiDoctorAgenda, doctorsQuery.isSuccess])
 
-  const medicoSemVinculo =
-    roles.includes('medico') && !multiDoctorAgenda && !resolvedDoctorId
+  /** Só avalia vínculo após sessão já expor doctor.id ou lista ter carregado (evita falso positivo durante fetch). */
+  const doctorResolutionReady =
+    !roles.includes('medico') ||
+    multiDoctorAgenda ||
+    Boolean(linkedDoctorId) ||
+    doctorsQuery.isSuccess
 
-  return { resolvedDoctorId, medicoSemVinculo, doctorsList }
+  const medicoSemVinculo =
+    roles.includes('medico') &&
+    !multiDoctorAgenda &&
+    !resolvedDoctorId &&
+    doctorResolutionReady
+
+  return { resolvedDoctorId, medicoSemVinculo, doctorResolutionReady, doctorsList }
 }

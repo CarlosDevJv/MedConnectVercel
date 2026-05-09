@@ -1,12 +1,4 @@
-import {
-  Calendar,
-  ChartBar,
-  Coins,
-  Percent,
-  Smile,
-  Stethoscope,
-  UserRound,
-} from 'lucide-react'
+import { Calendar, ChartBar, Percent, Stethoscope, UserRound } from 'lucide-react'
 import * as React from 'react'
 
 import { StatCard } from '@/app/components/StatCard'
@@ -71,14 +63,14 @@ export function AnalyticsDashboardPage() {
             Gestão
           </p>
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-display text-2xl text-[var(--color-foreground)]">Indicadores e relatórios</h1>
+            <h1 className="font-display text-2xl text-[var(--color-foreground)]">Indicadores</h1>
             <span className="rounded-full border border-emerald-300/80 bg-emerald-50/95 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-950">
-              Agendamentos reais
+              Só agendamentos (API)
             </span>
           </div>
           <p className="text-sm text-[var(--color-muted-foreground)]">
-            Indicadores de consultas derivadas da tabela de agendamentos; demais gráficos de convênio
-            permanecem orientativos. API{' '}
+            Números calculados exclusivamente a partir dos endpoints de médicos, agendamentos e pacientes
+            descritos na{' '}
             <a
               className="font-medium text-[var(--color-accent)] underline-offset-2 hover:underline"
               href="https://do5wegrct3.apidog.io/"
@@ -86,8 +78,8 @@ export function AnalyticsDashboardPage() {
               rel="noreferrer"
             >
               Apidog RiseUP
-            </a>{' '}
-            quando os endpoints estiverem publicados.
+            </a>
+            . Não há faturamento nem convênio na API pública — esses blocos foram removidos.
           </p>
         </div>
       </header>
@@ -131,37 +123,13 @@ export function AnalyticsDashboardPage() {
           icon={Percent}
           loading={query.isLoading}
         />
-        <StatCard
-          label="Faturamento (BRL)"
-          value={
-            query.isLoading
-              ? undefined
-              : m
-                ? m.revenueBrl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                : '—'
-          }
-          icon={Coins}
-          loading={query.isLoading}
-        />
-        <StatCard
-          label="Satisfação média"
-          value={
-            query.isLoading
-              ? undefined
-              : m?.satisfactionAvg != null
-                ? String(m.satisfactionAvg)
-                : '—'
-          }
-          icon={Smile}
-          loading={query.isLoading}
-        />
       </section>
 
       {m ? (
         <>
           <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <h2 className="font-display text-lg text-[var(--color-foreground)]">Consultas por dia</h2>
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">Amostra de até 14 dias no intervalo.</p>
+            <h2 className="font-display text-lg text-[var(--color-foreground)]">Consultas concluídas por dia</h2>
+            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">Até 14 dias no intervalo aplicado.</p>
             <div className="mt-6 flex h-40 items-end gap-1.5">
               {m.consultationsByDay.map((b) => (
                 <div key={b.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
@@ -175,44 +143,6 @@ export function AnalyticsDashboardPage() {
               ))}
             </div>
           </section>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-              <h2 className="font-display text-lg text-[var(--color-foreground)]">Faturamento mensal</h2>
-              <div className="mt-4 space-y-3">
-                {m.revenueByMonth.map((row) => (
-                  <div key={row.month}>
-                    <div className="mb-1 flex justify-between text-xs">
-                      <span>{row.month}</span>
-                      <span className="text-[var(--color-muted-foreground)]">
-                        {row.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[var(--color-muted)]">
-                      <div
-                        className="h-full rounded-full bg-[var(--color-accent)]"
-                        style={{
-                          width: `${(row.value / Math.max(...m.revenueByMonth.map((x) => x.value), 1)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-              <h2 className="font-display text-lg text-[var(--color-foreground)]">Convênios (amostra)</h2>
-              <ul className="mt-4 space-y-2 text-sm">
-                {m.insuranceShare.map((x) => (
-                  <li key={x.name} className="flex justify-between gap-2">
-                    <span>{x.name}</span>
-                    <span className="text-[var(--color-muted-foreground)]">{x.percent}%</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)]">

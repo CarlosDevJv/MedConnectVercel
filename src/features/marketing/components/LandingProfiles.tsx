@@ -47,7 +47,7 @@ export function LandingProfiles() {
             <CalendarDays className="h-7 w-7 text-[var(--color-accent-solid)]" aria-hidden />
             <p className="mt-3 text-sm font-semibold text-[var(--color-foreground)]">Atendimento ágil</p>
             <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
-              Próximo paciente, status da fila e atalhos de prontuário sem telas que distraiam do consultório.
+              Próximo paciente, status da fila e atalhos para laudos e relatórios sem telas que distraiam do consultório.
             </p>
           </div>
           <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-sidebar)] p-5">
@@ -77,7 +77,7 @@ export function LandingProfiles() {
           </p>
           {tab === 'medicos' ? (
             <ul className="mt-5 list-disc space-y-1.5 pl-5 text-[15px] text-[var(--color-foreground)]">
-              <li>Prontuário médico</li>
+              <li>Pacientes (cadastro API)</li>
               <li>Gestão de laudos</li>
               <li>Agendamentos próprios</li>
               <li>Comunicação com pacientes</li>

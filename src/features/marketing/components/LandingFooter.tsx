@@ -13,7 +13,7 @@ export function LandingFooter() {
               <BrandWordmark size="md" className="!text-[var(--color-accent)]" />
             </Link>
             <p className="max-w-xs text-sm leading-relaxed">
-              MediConnect reúne agenda, prontuário e comunicação numa só plataforma para equipes clínicas crescer com dados
+              MediConnect reúne agenda, pacientes, relatórios e comunicação numa só base alinhada à API RiseUP — dados
               confiáveis e rastreáveis.
             </p>
           </div>
@@ -28,7 +28,7 @@ export function LandingFooter() {
               </li>
               <li>
                 <a href="#solucoes" className="hover:text-[var(--color-surface)]">
-                  Prontuário eletrônico
+                  Pacientes e laudos
                 </a>
               </li>
               <li>

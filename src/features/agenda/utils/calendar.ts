@@ -86,6 +86,7 @@ export function rangeToISOStrings(from: Date, to: Date): { from: string; to: str
   return { from: start.toISOString(), to: end.toISOString() }
 }
 
+/** Monta ISO UTC a partir de data `YYYY-MM-DD` e hora local 24 h (`HH:MM` ou `HH:MM:SS`). */
 export function combineDateAndTime(dateISO: string, timeHHmm: string): string {
   const parts = timeHHmm.split(':').map(Number)
   const hh = parts[0] ?? 0

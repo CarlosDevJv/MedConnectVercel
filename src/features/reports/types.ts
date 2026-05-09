@@ -1,11 +1,15 @@
-/** Alinhado ao Apidog: Report / ReportInput em /rest/v1/reports */
+/**
+ * Contrato RiseUP/OpenAPI Reports — listagem GET /rest/v1/reports
+ * ({@link https://do5wegrct3.apidog.io/listar-relat%C3%B3rios-m%C3%A9dicos-23131760e0 Apidog: Listar relatórios médicos}).
+ * Enum `status`: `draft` | `completed` (tipo Postgres esperado `report_status` aligned).
+ */
 
 export const REPORT_STATUSES = ['draft', 'completed'] as const
 export type ReportStatus = (typeof REPORT_STATUSES)[number]
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
-  draft: 'A descrever',
-  completed: 'Concluído',
+  draft: 'Rascunho',
+  completed: 'Finalizado',
 }
 
 export interface Report {
@@ -53,9 +57,6 @@ export interface ListReportsParams {
   order?: string
   page?: number
   pageSize?: number
-  /** ISO 8601 — filtro PostgREST em created_at */
-  createdFrom?: string
-  createdTo?: string
 }
 
 export interface ReportList {

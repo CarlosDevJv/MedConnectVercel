@@ -12,16 +12,55 @@ const KNOWN_ROLES: ReadonlySet<UserRole> = new Set([
   'user',
 ])
 
+/** Sinônimos / capitalização vinda de JWT ou `/user-info` — o app compara com papéis em minúsculas. */
+const ROLE_SYNONYMS: Readonly<Record<string, UserRole>> = {
+  admin: 'admin',
+  administrator: 'admin',
+  gestor: 'gestor',
+  manager: 'gestor',
+  gerente: 'gestor',
+  medico: 'medico',
+  médico: 'medico',
+  doctor: 'medico',
+  secretaria: 'secretaria',
+  secretária: 'secretaria',
+  paciente: 'paciente',
+  patient: 'paciente',
+  user: 'user',
+}
+
+function normalizeRoleLabel(raw: string): UserRole | null {
+  const s = raw.normalize('NFKC').trim().toLowerCase()
+  if (!s) return null
+  const mapped = ROLE_SYNONYMS[s]
+  if (mapped) return mapped
+  return KNOWN_ROLES.has(s as UserRole) ? (s as UserRole) : null
+}
+
 function coerceRoles(value: unknown): UserRole[] {
   if (!value) return []
   const raw = Array.isArray(value) ? value : [value]
   const out: UserRole[] = []
   for (const item of raw) {
-    if (typeof item === 'string' && KNOWN_ROLES.has(item as UserRole)) {
-      out.push(item as UserRole)
+    if (typeof item === 'string') {
+      const n = normalizeRoleLabel(item)
+      if (n) out.push(n)
     }
   }
-  return out
+  return dedupeRoles(out)
+}
+
+function sanitizeResolvedRoles(roles: readonly (UserRole | string)[]): UserRole[] {
+  const out: UserRole[] = []
+  for (const r of roles) {
+    if (typeof r === 'string') {
+      const n = normalizeRoleLabel(r)
+      if (n) out.push(n)
+    } else if (KNOWN_ROLES.has(r)) {
+      out.push(r)
+    }
+  }
+  return dedupeRoles(out)
 }
 
 function dedupeRoles(roles: UserRole[]): UserRole[] {
@@ -135,9 +174,10 @@ export function hydrateUserInfo(
 
   if (!remote) return fallback
   if (!fallback) {
+    const raw = remoteRoles.length ? remoteRoles : (remote.roles ?? [])
     return {
       ...remote,
-      roles: remoteRoles.length ? remoteRoles : (remote.roles ?? []),
+      roles: sanitizeResolvedRoles(raw),
     }
   }
 
@@ -157,7 +197,7 @@ export function hydrateUserInfo(
       phone: remote.profile?.phone ?? fallback.profile?.phone ?? null,
       avatar_url: remote.profile?.avatar_url ?? fallback.profile?.avatar_url ?? null,
     },
-    roles: resolvedRoles,
+    roles: sanitizeResolvedRoles(resolvedRoles),
     permissions: remote.permissions ?? fallback.permissions,
     doctor: remote.doctor ?? null,
     patient: remote.patient ?? null,

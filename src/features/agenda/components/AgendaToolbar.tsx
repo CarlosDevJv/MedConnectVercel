@@ -1,7 +1,5 @@
-import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, ListOrdered, Search } from 'lucide-react'
+import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import * as React from 'react'
-import { Link } from 'react-router-dom'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -126,12 +124,6 @@ export function AgendaToolbar({
       </div>
 
       <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[260px] lg:justify-end">
-        <Button type="button" variant="outline" size="sm" asChild>
-          <Link to="/app/fila-de-espera" className="gap-1.5">
-            <ListOrdered className="h-3.5 w-3.5" />
-            Fila de espera
-          </Link>
-        </Button>
         <Button type="button" variant="outline" size="sm" disabled title="Em breve">
           Baixar PDF
         </Button>

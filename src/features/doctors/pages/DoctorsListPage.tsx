@@ -1,5 +1,6 @@
 import { AlertCircle, RefreshCcw, Stethoscope } from 'lucide-react'
 import * as React from 'react'
+import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/pagination'
@@ -11,6 +12,9 @@ import { useListDoctors } from '@/features/doctors/hooks'
 import type { Doctor } from '@/features/doctors/types'
 import { useHasRole } from '@/features/auth/useAuth'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
+
+/** Cadastro com senha inicial + CRM (`create-user-with-password`). */
+const NEW_DOCTOR_HREF = '/app/admin/medico/novo_medico'
 
 type DrawerState =
   | { open: false }
@@ -45,9 +49,6 @@ export function DoctorsListPage() {
   const [drawer, setDrawer] = React.useState<DrawerState>({ open: false })
   const [deleteTarget, setDeleteTarget] = React.useState<Doctor | null>(null)
 
-  function openCreate() {
-    setDrawer({ open: true, mode: 'create' })
-  }
   function openEdit(doctor: Doctor) {
     setDrawer({ open: true, mode: 'edit', doctor })
   }
@@ -74,7 +75,8 @@ export function DoctorsListPage() {
           <h1 className="font-display text-2xl text-[var(--color-foreground)]">Médicos</h1>
         </div>
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Gerencie os médicos da clínica. CRM e CPF são validados no cadastro.
+          Lista da equipe: abra um médico para ajustar a disponibilidade na agenda. Cadastro novo e edições
+          de ficha ficam restritos a admin e gestor.
         </p>
       </header>
 
@@ -85,9 +87,8 @@ export function DoctorsListPage() {
         onPageSizeChange={setPageSize}
         total={total}
         loading={query.isLoading || query.isFetching}
-        onCreate={openCreate}
         canCreate={canManage}
-        createWithPasswordHref="/app/admin/medico/novo_medico"
+        newDoctorHref={NEW_DOCTOR_HREF}
       />
 
       {query.isError ? (
@@ -96,7 +97,7 @@ export function DoctorsListPage() {
         <EmptyState
           query={debouncedSearch}
           canCreate={canManage}
-          onCreate={openCreate}
+          newDoctorHref={NEW_DOCTOR_HREF}
           onClearSearch={() => setSearch('')}
         />
       ) : (
@@ -136,11 +137,11 @@ export function DoctorsListPage() {
 interface EmptyStateProps {
   query: string
   canCreate: boolean
-  onCreate: () => void
+  newDoctorHref: string
   onClearSearch: () => void
 }
 
-function EmptyState({ query, canCreate, onCreate, onClearSearch }: EmptyStateProps) {
+function EmptyState({ query, canCreate, newDoctorHref, onClearSearch }: EmptyStateProps) {
   const hasQuery = query.trim().length > 0
   return (
     <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-14 text-center">
@@ -164,8 +165,8 @@ function EmptyState({ query, canCreate, onCreate, onClearSearch }: EmptyStatePro
           </Button>
         )}
         {canCreate && (
-          <Button type="button" onClick={onCreate}>
-            Novo médico
+          <Button type="button" asChild>
+            <Link to={newDoctorHref}>Novo médico</Link>
           </Button>
         )}
       </div>

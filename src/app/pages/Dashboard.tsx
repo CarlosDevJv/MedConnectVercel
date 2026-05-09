@@ -1,6 +1,7 @@
 import { AdminDashboard } from '@/app/pages/AdminDashboard'
 import { DoctorDashboard } from '@/app/pages/DoctorDashboard'
 import { HomePlaceholder } from '@/app/pages/HomePlaceholder'
+import { SecretariaDashboard } from '@/app/pages/SecretariaDashboard'
 import { useAuth } from '@/features/auth/useAuth'
 
 function DashboardBootstrapSpinner() {
@@ -36,6 +37,15 @@ export function Dashboard() {
     !roles.includes('gestor')
   ) {
     return <DoctorDashboard />
+  }
+
+  if (
+    roles.includes('secretaria') &&
+    !roles.includes('admin') &&
+    !roles.includes('gestor') &&
+    !roles.includes('medico')
+  ) {
+    return <SecretariaDashboard />
   }
 
   return <HomePlaceholder />

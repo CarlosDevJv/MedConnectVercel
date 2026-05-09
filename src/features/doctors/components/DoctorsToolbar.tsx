@@ -1,10 +1,9 @@
-import { KeyRound, Search, Stethoscope, X } from 'lucide-react'
+import { Search, Stethoscope, X } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Select,
   SelectContent,
@@ -20,10 +19,9 @@ interface DoctorsToolbarProps {
   onPageSizeChange: (value: number) => void
   total: number | undefined
   loading: boolean
-  onCreate: () => void
   canCreate: boolean
-  /** Rota cadastro médico + senha + CRM (admin/gestor). */
-  createWithPasswordHref?: string
+  /** Cadastro completo com senha inicial (Edge Function `create-user-with-password`, role médico). */
+  newDoctorHref?: string
 }
 
 const PAGE_SIZES = [10, 20, 50]
@@ -35,9 +33,8 @@ export function DoctorsToolbar({
   onPageSizeChange,
   total,
   loading,
-  onCreate,
   canCreate,
-  createWithPasswordHref,
+  newDoctorHref,
 }: DoctorsToolbarProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -103,32 +100,12 @@ export function DoctorsToolbar({
           </Select>
         </div>
 
-        {canCreate && createWithPasswordHref && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className="border-[var(--color-foreground)]/25 bg-[var(--color-muted)]/50 font-semibold text-[var(--color-foreground)] shadow-sm hover:bg-[var(--color-muted)]"
-                asChild
-              >
-                <Link to={createWithPasswordHref}>
-                  <KeyRound className="h-4 w-4" />
-                  Senha + CRM
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[280px] text-xs leading-relaxed">
-              Cadastro alternativo: define senha inicial e dados de CRM no mesmo fluxo (Edge Function{' '}
-              <span className="font-mono">create-user-with-password</span> com perfil médico, conforme RiseUP /
-              Apidog).
-            </TooltipContent>
-          </Tooltip>
-        )}
-        {canCreate && (
-          <Button type="button" onClick={onCreate}>
-            <Stethoscope className="h-4 w-4" />
-            Novo médico
+        {canCreate && newDoctorHref && (
+          <Button type="button" asChild>
+            <Link to={newDoctorHref}>
+              <Stethoscope className="h-4 w-4" />
+              Novo médico
+            </Link>
           </Button>
         )}
       </div>

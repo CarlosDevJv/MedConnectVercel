@@ -17,7 +17,6 @@ import * as React from 'react'
 import { Controller, useForm, useWatch, type SubmitHandler } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { FieldError } from '@/components/ui/field-error'
 import { FormSection } from '@/components/ui/form-section'
 import { Input } from '@/components/ui/input'
@@ -254,8 +253,41 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onSubmit={handleSubmit(props.onSubmit as any)}
         noValidate
-        className="flex flex-col gap-5"
+        className="relative flex flex-col gap-5"
       >
+        <div className="pointer-events-none absolute left-[-9999px] top-0 h-px w-px overflow-hidden" aria-hidden>
+          <input type="hidden" {...register('mother_profession')} />
+          <input type="hidden" {...register('father_profession')} />
+          <Controller
+            control={control}
+            name="rn_in_insurance"
+            render={({ field: { ref, value, onChange, onBlur } }) => (
+              <input
+                ref={ref}
+                type="checkbox"
+                tabIndex={-1}
+                checked={!!value}
+                onBlur={onBlur}
+                onChange={(e) => onChange(e.target.checked)}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="vip"
+            render={({ field: { ref, value, onChange, onBlur } }) => (
+              <input
+                ref={ref}
+                type="checkbox"
+                tabIndex={-1}
+                checked={!!value}
+                onBlur={onBlur}
+                onChange={(e) => onChange(e.target.checked)}
+              />
+            )}
+          />
+        </div>
+
         {/* ── Dados do paciente ── */}
         <FormSection
           title="Dados do paciente"
@@ -462,16 +494,8 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
               <Input id="mother_name" {...register('mother_name')} />
             </Field>
 
-            <Field label="Profissão da mãe" error={errors.mother_profession?.message}>
-              <Input id="mother_profession" {...register('mother_profession')} />
-            </Field>
-
             <Field label="Nome do pai" error={errors.father_name?.message}>
               <Input id="father_name" {...register('father_name')} />
-            </Field>
-
-            <Field label="Profissão do pai" error={errors.father_profession?.message}>
-              <Input id="father_profession" {...register('father_profession')} />
             </Field>
 
             <Field label="Nome do responsável" error={errors.guardian_name?.message}>
@@ -503,35 +527,6 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
               <Input id="spouse_name" {...register('spouse_name')} />
             </Field>
 
-            <div className="md:col-span-2 flex flex-col gap-3 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-muted)]/40 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <Controller
-                control={control}
-                name="rn_in_insurance"
-                render={({ field }) => (
-                  <ToggleRow
-                    id="rn_in_insurance"
-                    label="RN na Guia do convênio"
-                    description="Marque se o paciente é Recém-Nascido cadastrado na guia do convênio."
-                    checked={!!field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
-              />
-              <Controller
-                control={control}
-                name="vip"
-                render={({ field }) => (
-                  <ToggleRow
-                    id="vip"
-                    label="Paciente VIP"
-                    description="Sinaliza atendimento prioritário."
-                    checked={!!field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
-              />
-            </div>
-
             <Field label="Código legado" error={errors.legacy_code?.message}>
               <Input
                 id="legacy_code"
@@ -544,7 +539,7 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
               label="Observações"
               error={errors.notes?.message}
               className="md:col-span-2"
-              hint="Observações livres complementares ao prontuário."
+              hint="Observações livres no cadastro do paciente (campo da API)."
             >
               <textarea
                 id="notes"
@@ -845,7 +840,7 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
           </div>
           <p className="mt-4 flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
             <Pill className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" aria-hidden />
-            Campos clínicos complementam o laudo e o atendimento; mantenha atualizado com o paciente.
+            Campos clínicos do cadastro de pacientes (API); mantenha atualizado com o paciente.
           </p>
         </FormSection>
 
@@ -909,33 +904,6 @@ function PhoneInput({ control, name, invalid }: PhoneInputProps) {
         />
       )}
     />
-  )
-}
-
-interface ToggleRowProps {
-  id: string
-  label: string
-  description?: string
-  checked: boolean
-  onCheckedChange: (checked: boolean) => void
-}
-
-function ToggleRow({ id, label, description, checked, onCheckedChange }: ToggleRowProps) {
-  return (
-    <label htmlFor={id} className="flex flex-1 cursor-pointer items-start gap-3">
-      <Checkbox
-        id={id}
-        checked={checked}
-        onCheckedChange={(value) => onCheckedChange(value === true)}
-        className="mt-0.5"
-      />
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-[var(--color-foreground)]">{label}</p>
-        {description && (
-          <p className="text-xs text-[var(--color-muted-foreground)]">{description}</p>
-        )}
-      </div>
-    </label>
   )
 }
 

@@ -13,7 +13,6 @@ export const createAppointmentFormSchema = z.object({
   doctor_id: z.string().uuid('Selecione o profissional'),
   patient_id: z.string().uuid('Selecione o paciente'),
   scheduled_at: z.string().min(1, 'Data e horário obrigatórios'),
-  duration_minutes: z.coerce.number().int().min(10).max(480).default(30),
   status: appointmentStatusSchema.optional().default('requested'),
 })
 

@@ -58,17 +58,13 @@ export function DoctorPasswordCreatePage() {
         <p className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
           Admin • Médico
         </p>
-        <h1 className="font-display text-2xl text-[var(--color-foreground)]">
-          Novo médico (senha + CRM)
-        </h1>
+        <h1 className="font-display text-2xl text-[var(--color-foreground)]">Novo médico</h1>
         <p className="max-w-[640px] text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-          Fluxo RiseUP / Apidog:{' '}
+          Cadastro com senha inicial e dados de CRM. O convite usa{' '}
           <code className="rounded-md bg-[var(--color-muted)] px-1 font-mono text-xs">
             POST /functions/v1/create-user-with-password
           </code>{' '}
-          com <code className="rounded-md bg-[var(--color-muted)] px-1 font-mono text-xs">role</code>{' '}
-          <span className="font-mono text-xs">medico</span> e dados de CRM para criar o perfil médico com
-          senha inicial (e-mail auto-confirmado).
+          com <span className="font-mono text-xs">role=medico</span> (e-mail auto-confirmado).
         </p>
       </header>
 

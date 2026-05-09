@@ -8,6 +8,7 @@ import {
   minutesSinceMidnight,
   toISODateString,
 } from '@/features/agenda/utils/calendar'
+import { formatHourMarkPtBr, formatTimePtBr } from '@/lib/formatTimePtBr'
 import { cn } from '@/lib/cn'
 
 const ROW_PX = 22
@@ -87,7 +88,7 @@ export function CalendarDayView({
           const m = startMin + i * GRID_SLOT_MINUTES
           const h = Math.floor(m / 60)
           const mm = m % 60
-          const label = mm === 0 ? `${String(h).padStart(2, '0')}:00` : ''
+          const label = mm === 0 ? formatHourMarkPtBr(h, 0) : ''
           return (
             <div
               key={i}
@@ -127,7 +128,7 @@ export function CalendarDayView({
             const h = (dur / GRID_SLOT_MINUTES) * ROW_PX
             const docName = doctorNameById[a.doctor_id] ?? 'Profissional'
             const end = new Date(start.getTime() + dur * 60_000)
-            const timeRange = `${start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+            const timeRange = `${formatTimePtBr(start)} – ${formatTimePtBr(end)}`
 
             return (
               <button
