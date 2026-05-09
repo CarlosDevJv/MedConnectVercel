@@ -3,7 +3,12 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-do
 import { AppShell } from '@/app/layouts/AppShell'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
 import { Dashboard } from '@/app/pages/Dashboard'
-import { RedirectIfAuthed, RequireAuth, RequireRole } from '@/features/auth/guards'
+import {
+  RedirectIfAuthed,
+  RequireAuth,
+  RequirePatientPortal,
+  RequireRole,
+} from '@/features/auth/guards'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { DoctorDetailsPage } from '@/features/doctors/pages/DoctorDetailsPage'
 import { DoctorPasswordCreatePage } from '@/features/doctors/pages/DoctorPasswordCreatePage'
@@ -11,7 +16,6 @@ import { DoctorsListPage } from '@/features/doctors/pages/DoctorsListPage'
 import { PatientDetailsPage } from '@/features/patients/pages/PatientDetailsPage'
 import { PatientFormPage } from '@/features/patients/pages/PatientFormPage'
 import { PatientsListPage } from '@/features/patients/pages/PatientsListPage'
-import { RegisterPatientPage } from '@/features/patients/pages/RegisterPatientPage'
 import { AnalyticsDashboardPage } from '@/features/analytics/pages/AnalyticsDashboardPage'
 import { AgendaPage } from '@/features/agenda/pages/AgendaPage'
 import { MyDoctorAvailabilityPage } from '@/features/agenda/pages/MyDoctorAvailabilityPage'
@@ -23,6 +27,9 @@ import { PrivacySecurityPage } from '@/features/transversal/pages/PrivacySecurit
 import { SecurityNotificationsHubPage } from '@/features/transversal/pages/SecurityNotificationsHubPage'
 import { SecretariasPage } from '@/features/secretarias/pages/SecretariasPage'
 import { LandingPage } from '@/features/marketing/pages/LandingPage'
+import { MyAppointmentsPage } from '@/features/patient-portal/pages/MyAppointmentsPage'
+import { MyReportDetailPage } from '@/features/patient-portal/pages/MyReportDetailPage'
+import { MyReportsPage } from '@/features/patient-portal/pages/MyReportsPage'
 import {
   AGENDA_ROLES,
   ANALYTICS_ROLES,
@@ -118,6 +125,30 @@ const appChildren: RouteObject[] = [
     ),
   },
   {
+    path: 'meus-agendamentos',
+    element: (
+      <RequirePatientPortal>
+        <MyAppointmentsPage />
+      </RequirePatientPortal>
+    ),
+  },
+  {
+    path: 'meus-laudos',
+    element: (
+      <RequirePatientPortal>
+        <MyReportsPage />
+      </RequirePatientPortal>
+    ),
+  },
+  {
+    path: 'meus-laudos/:id',
+    element: (
+      <RequirePatientPortal>
+        <MyReportDetailPage />
+      </RequirePatientPortal>
+    ),
+  },
+  {
     path: 'agenda',
     element: (
       <RequireRole roles={[...AGENDA_ROLES]}>
@@ -179,7 +210,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/login', element: <LoginPage /> },
-      { path: '/cadastro', element: <RegisterPatientPage /> },
+      { path: '/cadastro', element: <Navigate to="/login" replace /> },
     ],
   },
   {

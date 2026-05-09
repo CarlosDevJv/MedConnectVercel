@@ -4,33 +4,6 @@ import { ApiError, apiClient, parseContentRangeTotal } from '@/lib/apiClient'
 import type { ListPatientsParams, Patient, PatientList } from '@/features/patients/types'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
 
-export interface RegisterPatientPayload {
-  email: string
-  full_name: string
-  cpf: string
-  phone_mobile: string
-  birth_date?: string
-}
-
-export interface RegisterPatientResponse {
-  success: boolean
-  patient_id: string
-  user_id?: string
-  message: string
-  email?: string
-}
-
-export async function registerPatient(payload: RegisterPatientPayload) {
-  return apiClient.post<RegisterPatientResponse, RegisterPatientPayload & { redirect_url: string }>(
-    '/functions/v1/register-patient',
-    {
-      ...payload,
-      redirect_url: `${getEnv().APP_URL}/app`,
-    },
-    { anonymous: true }
-  )
-}
-
 /** Texto inteiro só com dígitos e máscara de CPF (evita tratar nome com números como CPF). */
 function looksLikeCpfSearch(trimmed: string): boolean {
   if (!/^[\d\s.\-]+$/.test(trimmed)) return false

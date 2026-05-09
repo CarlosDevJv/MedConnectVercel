@@ -1,8 +1,10 @@
 import { AdminDashboard } from '@/app/pages/AdminDashboard'
 import { DoctorDashboard } from '@/app/pages/DoctorDashboard'
 import { HomePlaceholder } from '@/app/pages/HomePlaceholder'
+import { PatientPortalDashboard } from '@/app/pages/PatientPortalDashboard'
 import { SecretariaDashboard } from '@/app/pages/SecretariaDashboard'
 import { useAuth } from '@/features/auth/useAuth'
+import { usePatientPortalRouteGate } from '@/features/patient-portal/access'
 
 function DashboardBootstrapSpinner() {
   return (
@@ -19,6 +21,7 @@ function DashboardBootstrapSpinner() {
 export function Dashboard() {
   const { userInfo, status, userEnrichmentSynced } = useAuth()
   const roles = userInfo?.roles ?? []
+  const portalGate = usePatientPortalRouteGate()
 
   const awaitingFirstEnrichment =
     status === 'authenticated' && !userEnrichmentSynced && roles.length === 0
@@ -46,6 +49,10 @@ export function Dashboard() {
     !roles.includes('medico')
   ) {
     return <SecretariaDashboard />
+  }
+
+  if (portalGate.allowed) {
+    return <PatientPortalDashboard />
   }
 
   return <HomePlaceholder />

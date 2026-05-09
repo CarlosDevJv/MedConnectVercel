@@ -55,7 +55,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
       if (isSmsServiceDisabled(err)) {
         toast.error('SMS indisponível', {
           description:
-            'O serviço de envio está temporariamente desabilitado no servidor (consulte o backend / Apidog).',
+            'O serviço de envio está temporariamente desabilitado no servidor. Consulte o suporte técnico.',
         })
         return
       }
@@ -94,7 +94,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
         <Label htmlFor={embedded ? 'hub-sms-patient' : 'sms-patient'}>ID do paciente (opcional)</Label>
         <Input
           id={embedded ? 'hub-sms-patient' : 'sms-patient'}
-          placeholder="UUID — quando informado na API RiseUP (`patient_id` no body)"
+          placeholder="UUID do paciente (opcional)"
           value={patientId}
           onChange={(e) => setPatientId(e.target.value)}
         />
@@ -116,7 +116,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
           )}
         />
         <div className="flex justify-between text-xs text-[var(--color-muted-foreground)]">
-          <span>Máx. {MSG_MAX} caracteres (contrato da API).</span>
+          <span>Máx. {MSG_MAX} caracteres.</span>
           <span aria-live="polite">{Math.max(charsLeft, 0)} restantes</span>
         </div>
       </div>
@@ -140,10 +140,10 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
     return (
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3 border-l-[3px] border-emerald-600/90 pl-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-800/90">Canal disponível · API</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-800/90">Canal disponível</p>
           <h3 className="font-display text-xl font-medium italic text-[var(--color-foreground)]">SMS (Twilio)</h3>
           <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-            Envio documentado como <code className="text-xs">POST /functions/v1/send-sms</code> na RiseUP/APidog.
+            Envio de mensagens pela integração configurada pelo MediConnect (<code className="text-xs">send-sms</code>).
           </p>
         </div>
         {formBlock}
@@ -177,8 +177,8 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
               Canal de comunicação
             </h1>
             <p className="max-w-xl text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">
-              Único envio textual publicado nesta API. Histórico de disparos só aparecerá quando houver endpoint
-              documentado na Apidog RiseUP.
+              Envio de SMS para lembretes e comunicações rápidas. Histórico detalhado de disparos dependerá de recursos
+              habilitados no ambiente da clínica.
             </p>
           </div>
 

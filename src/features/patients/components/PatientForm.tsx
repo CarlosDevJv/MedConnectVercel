@@ -4,8 +4,11 @@ import {
   Briefcase,
   Building2,
   Calendar,
+  Eye,
+  EyeOff,
   Heart,
   IdCard,
+  KeyRound,
   Mail,
   MapPin,
   Phone,
@@ -14,7 +17,13 @@ import {
   Users,
 } from 'lucide-react'
 import * as React from 'react'
-import { Controller, useForm, useWatch, type SubmitHandler } from 'react-hook-form'
+import {
+  Controller,
+  useForm,
+  useWatch,
+  type FieldErrors,
+  type SubmitHandler,
+} from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/ui/field-error'
@@ -85,6 +94,12 @@ export interface PatientFormHandle {
 
 type FormValues = CreatePatientValues | UpdatePatientValues
 
+function createPasswordErrorMessage(errors: FieldErrors<FormValues>): string | undefined {
+  const err = errors.password
+  const msg = err && typeof err === 'object' ? err.message : undefined
+  return typeof msg === 'string' ? msg : undefined
+}
+
 function buildEditDefaults(patient: Patient): UpdatePatientValues {
   return {
     full_name: patient.full_name ?? '',
@@ -136,6 +151,7 @@ function buildEditDefaults(patient: Patient): UpdatePatientValues {
     allergies: patient.allergies ?? '',
     medications_in_use: patient.medications_in_use ?? '',
     chronic_conditions: patient.chronic_conditions ?? '',
+    password: '',
   }
 }
 
@@ -190,12 +206,14 @@ function buildCreateDefaults(input?: Partial<CreatePatientValues>): CreatePatien
     allergies: input?.allergies ?? '',
     medications_in_use: input?.medications_in_use ?? '',
     chronic_conditions: input?.chronic_conditions ?? '',
+    password: input?.password ?? '',
   }
 }
 
 export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>(
   function PatientForm(props, ref) {
     const isEdit = props.mode === 'edit'
+    const [showPassword, setShowPassword] = React.useState(false)
 
     const {
       register,
@@ -568,6 +586,39 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
                 leftIcon={<Mail className="h-4 w-4" />}
                 invalid={!!errors.email}
                 {...register('email')}
+              />
+            </Field>
+
+            <Field
+              label={isEdit ? 'Senha do portal (opcional)' : 'Senha inicial (portal)'}
+              error={createPasswordErrorMessage(errors)}
+              className="md:col-span-2"
+              hint={
+                isEdit
+                  ? 'Opcional. Mínimo 6 caracteres. Se preenchida, habilita o login do portal ao salvar este cadastro.'
+                  : 'Opcional. Mínimo 6 caracteres. Se preenchida, cria também a conta de acesso ao portal para o novo cadastro.'
+              }
+            >
+              <Input
+                id="initial_password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder={
+                  isEdit ? 'Deixe em branco para não criar/alternar portal' : 'Deixe em branco se o paciente não acessar o sistema'
+                }
+                leftIcon={<KeyRound className="h-4 w-4" />}
+                invalid={Boolean(createPasswordErrorMessage(errors))}
+                rightSlot={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                }
+                {...register('password')}
               />
             </Field>
 

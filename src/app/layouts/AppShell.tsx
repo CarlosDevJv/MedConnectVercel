@@ -5,7 +5,6 @@ import {
   Calendar,
   Clock,
   FileText,
-  HelpCircle,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -39,13 +38,11 @@ import {
   SECRETARIA_MANAGEMENT_ROLES,
   SIDEBAR_DASHBOARD_FALLBACK_ROLES,
 } from '@/lib/roleGroups'
+import { usePatientPortalRouteGate } from '@/features/patient-portal/access'
 import { AppointmentRemindersRunner } from '@/features/agenda/components/AppointmentRemindersRunner'
 import { cn } from '@/lib/cn'
 
 const SIDEBAR_STORAGE_KEY = 'mediconnect.sidebar'
-
-/** Documentação oficial RiseUP/publicada para o contrato REST deste aplicativo */
-const RISEUP_APIDOG_URL = 'https://do5wegrct3.apidog.io'
 
 const DROPDOWN_PANEL_CLASS =
   'z-50 min-w-[260px] max-w-[calc(100vw-2rem)] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-xl'
@@ -153,38 +150,6 @@ function HeaderIconActions() {
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button type="button" className={HEADER_ICON_BTN_CLASS} aria-label="Ajuda">
-            <HelpCircle className="h-[18px] w-[18px]" />
-          </button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            align="end"
-            sideOffset={6}
-            className={cn(DROPDOWN_PANEL_CLASS, 'overflow-hidden')}
-          >
-            <div className="border-b border-[var(--color-border)] px-3 py-2.5">
-              <p className="text-sm font-semibold text-[var(--color-foreground)]">Ajuda</p>
-            </div>
-            <DropdownMenu.Item
-              className="cursor-pointer rounded-[6px] px-3 py-2.5 text-sm outline-none hover:bg-[var(--color-accent-soft)] focus:bg-[var(--color-accent-soft)]"
-              onSelect={() => {
-                window.open(RISEUP_APIDOG_URL, '_blank', 'noopener,noreferrer')
-              }}
-            >
-              Abrir documentação RiseUP (Apidog)
-            </DropdownMenu.Item>
-            <div className="px-3 py-3">
-              <p className="text-xs leading-relaxed text-[var(--color-muted-foreground)]">
-                Contrato HTTP público das operações usadas pelo app.
-              </p>
-            </div>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
     </div>
   )
 }
@@ -214,6 +179,21 @@ const NAV_ITEMS: NavItem[] = [
     icon: LayoutDashboard,
     label: 'Início',
     to: '/app',
+    roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
+  },
+  {
+    id: 'paciente-agendamentos',
+    icon: Calendar,
+    label: 'Meus agendamentos',
+    to: '/app/meus-agendamentos',
+    /** Visibilidade real em `visibleItems`: `usePatientPortalRouteGate`; placeholder para satisfazer tipo. */
+    roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
+  },
+  {
+    id: 'paciente-laudos',
+    icon: FileText,
+    label: 'Meus laudos',
+    to: '/app/meus-laudos',
     roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
   },
   {
@@ -276,6 +256,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AppShell() {
   const { userInfo, signOut } = useAuth()
+  const portalGate = usePatientPortalRouteGate()
   const navigate = useNavigate()
   const [expanded, setExpanded] = React.useState(getInitialExpanded)
   const [signingOut, setSigningOut] = React.useState(false)
@@ -291,6 +272,9 @@ export function AppShell() {
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (!userInfo?.roles?.length) return item.id === 'dashboard'
+    if (item.id === 'paciente-agendamentos' || item.id === 'paciente-laudos') {
+      return portalGate.allowed
+    }
     return item.roles.some((r) => userInfo.roles.includes(r))
   })
 
@@ -330,11 +314,6 @@ export function AppShell() {
       setSigningOut(false)
     }
   }
-
-  const sidebarSupportClass = cn(
-    'flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-[13px] font-medium text-[var(--color-muted-foreground)] outline-none transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]/35',
-    !expanded && 'justify-center px-0 py-2'
-  )
 
   return (
     <div className="flex min-h-dvh bg-[var(--color-background)]">
@@ -381,17 +360,6 @@ export function AppShell() {
         </nav>
 
         <div className="shrink-0 space-y-1 border-t border-[var(--color-border)] p-2">
-          <a
-            href={RISEUP_APIDOG_URL}
-            target="_blank"
-            rel="noreferrer"
-            className={sidebarSupportClass}
-            aria-label="Documentação da API RiseUP (Apidog)"
-          >
-            <FileText className="h-4 w-4 shrink-0 text-[var(--color-accent)]" />
-            {expanded && <span>API RiseUP</span>}
-          </a>
-
           {expanded ? (
             <div className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-2">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--color-accent-soft)] text-sm font-semibold text-[var(--color-accent)]">
@@ -440,16 +408,6 @@ export function AppShell() {
             ))}
           </SheetBody>
           <div className="shrink-0 space-y-3 border-t border-[var(--color-border)] p-4">
-            <a
-              href={RISEUP_APIDOG_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex w-full items-center justify-start gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--color-muted)]/50"
-              onClick={() => setMobileNavOpen(false)}
-            >
-              <FileText className="h-4 w-4 shrink-0" />
-              Documentação da API
-            </a>
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--color-accent-soft)] text-sm font-semibold text-[var(--color-accent)]">
                 {initials || 'U'}

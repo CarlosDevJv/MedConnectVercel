@@ -9,11 +9,12 @@ import { PatientsTable } from '@/features/patients/components/PatientsTable'
 import { PatientsToolbar } from '@/features/patients/components/PatientsToolbar'
 import { useListPatients } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
-import { useCanManagePatients } from '@/features/auth/useAuth'
+import { useCanDeletePatients, useCanManagePatients } from '@/features/auth/useAuth'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
 export function PatientsListPage() {
   const canManage = useCanManagePatients()
+  const canDeletePatients = useCanDeletePatients()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -114,6 +115,7 @@ export function PatientsListPage() {
           loading={query.isLoading}
           pageSize={pageSize}
           canMutate={canManage}
+          canDeletePatients={canDeletePatients}
           onEdit={openEdit}
           onDelete={openDelete}
         />
@@ -123,13 +125,15 @@ export function PatientsListPage() {
         <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
       )}
 
-      <DeletePatientDialog
-        open={!!deleteTarget}
-        onOpenChange={(next) => {
-          if (!next) closeDelete()
-        }}
-        patient={deleteTarget}
-      />
+      {canDeletePatients ? (
+        <DeletePatientDialog
+          open={!!deleteTarget}
+          onOpenChange={(next) => {
+            if (!next) closeDelete()
+          }}
+          patient={deleteTarget}
+        />
+      ) : null}
     </div>
   )
 }

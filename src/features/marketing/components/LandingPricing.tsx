@@ -1,7 +1,4 @@
 import { Check } from 'lucide-react'
-import { Link } from 'react-router-dom'
-
-import { contactMailtoHref, specialistMailtoHref } from '@/features/marketing/data'
 
 export function LandingPricing() {
   return (
@@ -48,12 +45,6 @@ export function LandingPricing() {
                 <span>Suporte por email</span>
               </li>
             </ul>
-            <Link
-              to="/login"
-              className="mt-10 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] text-base font-semibold text-white hover:bg-[var(--color-accent-solid-hover)]"
-            >
-              Começar agora
-            </Link>
           </article>
 
           <article className="relative flex flex-col rounded-[var(--radius-md)] border-2 border-[var(--color-accent-solid)] bg-[var(--color-surface)] p-8 pt-10 shadow-[var(--shadow-elevated)] ring-[6px] ring-[var(--color-accent-soft)]/90">
@@ -67,7 +58,7 @@ export function LandingPricing() {
               R$ 397<span className="text-2xl font-semibold text-[var(--color-muted-foreground)]"> /mês</span>
             </p>
             <p className="mt-4 text-[15px] text-[var(--color-muted-foreground)]">
-              Operações em ritmo forte com pacientes, agenda, SMS e relatórios clínicos conforme a API RiseUP.
+              Operações em ritmo forte com pacientes, agenda, SMS e relatórios clínicos integrados ao MediConnect.
             </p>
             <ul className="mt-10 flex flex-1 flex-col gap-3 text-sm text-[var(--color-muted-foreground)]">
               <li className="flex gap-3">
@@ -84,19 +75,13 @@ export function LandingPricing() {
               </li>
               <li className="flex gap-3">
                 <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>SMS transacional (contrato RiseUP)</span>
+                <span>SMS transacional configurável</span>
               </li>
               <li className="flex gap-3">
                 <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
                 <span>Suporte estendido e armazenamento ampliado</span>
               </li>
             </ul>
-            <Link
-              to="/login"
-              className="mt-10 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] text-base font-semibold text-white hover:bg-[var(--color-accent-solid-hover)]"
-            >
-              Começar agora
-            </Link>
           </article>
 
           <article className="flex flex-col rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-card)]">
@@ -106,6 +91,7 @@ export function LandingPricing() {
             </p>
             <p className="mt-4 text-[15px] text-[var(--color-muted-foreground)]">
               Redes com múltiplas unidades integrações sob medida SLA dedicado e projeto de implantação acompanhado de perto.
+              Monte combinações de módulos SLA e onboarding com ajuda direta da equipe comercial MediConnect.
             </p>
             <ul className="mt-10 flex flex-1 flex-col gap-3 text-sm text-[var(--color-muted-foreground)]">
               <li className="flex gap-3">
@@ -125,25 +111,24 @@ export function LandingPricing() {
                 <span>Trilhas de compliance alinhadas ao seu jurídico</span>
               </li>
             </ul>
-            <a
-              href={contactMailtoHref}
-              className="mt-10 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] border-2 border-[var(--color-accent-solid)] text-base font-semibold text-[var(--color-accent-solid)] hover:bg-[var(--color-accent-soft)]"
+            <span
+              className="mt-10 inline-flex h-12 w-full cursor-default select-none items-center justify-center rounded-[var(--radius-md)] border-2 border-[var(--color-accent-solid)] text-base font-semibold text-[var(--color-accent-solid)]"
+              aria-disabled="true"
             >
               Entrar em contato
-            </a>
+            </span>
           </article>
         </div>
 
-        <div className="mx-auto mt-16 max-w-2xl rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-10 text-center shadow-[var(--shadow-card)]">
-          <p className="text-[15px] text-[var(--color-muted-foreground)]">
-            Monte combinações de módulos SLA e projeto de onboarding com ajuda direta da equipe comercial MediConnect.
-          </p>
-          <a
-            href={specialistMailtoHref}
-            className="mt-8 inline-flex h-12 w-full max-w-sm items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] px-10 text-base font-semibold text-white hover:bg-[var(--color-accent-solid-hover)] sm:mx-auto"
-          >
-            Conversar com um especialista
-          </a>
+        <div className="mt-10 grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <span
+              className="inline-flex h-12 w-full cursor-default select-none items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] text-base font-semibold text-white"
+              aria-disabled="true"
+            >
+              Começar agora
+            </span>
+          </div>
         </div>
       </div>
     </section>

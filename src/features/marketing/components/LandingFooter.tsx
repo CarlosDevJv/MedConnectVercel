@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 
 import { BrandWordmark } from '@/features/auth/components/BrandWordmark'
-import { contactMailtoHref, specialistMailtoHref } from '@/features/marketing/data'
 
 export function LandingFooter() {
   return (
@@ -13,8 +12,8 @@ export function LandingFooter() {
               <BrandWordmark size="md" className="!text-[var(--color-accent)]" />
             </Link>
             <p className="max-w-xs text-sm leading-relaxed">
-              MediConnect reúne agenda, pacientes, relatórios e comunicação numa só base alinhada à API RiseUP — dados
-              confiáveis e rastreáveis.
+              MediConnect reúne agenda, pacientes, relatórios e comunicação numa só base segura — dados confiáveis e
+              rastreáveis.
             </p>
           </div>
 
@@ -64,19 +63,10 @@ export function LandingFooter() {
             <p className="text-xs font-bold uppercase tracking-wider opacity-70">Contato</p>
             <ul className="mt-4 space-y-2 text-sm">
               <li>
-                <a href={contactMailtoHref} className="hover:text-[var(--color-surface)]">
-                  Suporte
-                </a>
+                <span className="cursor-default select-none">Suporte</span>
               </li>
               <li>
-                <a href={specialistMailtoHref} className="hover:text-[var(--color-surface)]">
-                  Vendas
-                </a>
-              </li>
-              <li>
-                <Link to="/cadastro" className="hover:text-[var(--color-surface)]">
-                  Cadastro pacientes
-                </Link>
+                <span className="cursor-default select-none">Vendas</span>
               </li>
             </ul>
           </div>

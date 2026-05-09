@@ -25,6 +25,7 @@ interface PatientsTableProps {
   loading: boolean
   pageSize: number
   canMutate: boolean
+  canDeletePatients: boolean
   onEdit: (patient: Patient) => void
   onDelete: (patient: Patient) => void
 }
@@ -34,6 +35,7 @@ export function PatientsTable({
   loading,
   pageSize,
   canMutate,
+  canDeletePatients,
   onEdit,
   onDelete,
 }: PatientsTableProps) {
@@ -154,21 +156,23 @@ export function PatientsTable({
                             <TooltipContent>Editar</TooltipContent>
                           </Tooltip>
 
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Excluir paciente"
-                                onClick={() => onDelete(patient)}
-                                className="text-[var(--color-destructive)] hover:bg-red-50 hover:text-[var(--color-destructive)]"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Excluir</TooltipContent>
-                          </Tooltip>
+                          {canDeletePatients ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Excluir paciente"
+                                  onClick={() => onDelete(patient)}
+                                  className="text-[var(--color-destructive)] hover:bg-red-50 hover:text-[var(--color-destructive)]"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Excluir</TooltipContent>
+                            </Tooltip>
+                          ) : null}
                         </>
                       )}
                     </div>

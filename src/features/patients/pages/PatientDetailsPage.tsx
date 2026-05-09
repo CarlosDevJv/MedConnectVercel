@@ -36,7 +36,7 @@ import {
   formatPatientCpf,
   formatPatientPhone,
 } from '@/features/patients/utils/format'
-import { useAuth, useCanManagePatients } from '@/features/auth/useAuth'
+import { useAuth, useCanDeletePatients, useCanManagePatients } from '@/features/auth/useAuth'
 import { REPORT_ROLES } from '@/lib/roleGroups'
 import { ApiError } from '@/lib/apiClient'
 import type { UserRole } from '@/types/user'
@@ -45,6 +45,7 @@ export function PatientDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const canManage = useCanManagePatients()
+  const canDeletePatient = useCanDeletePatients()
   const { userInfo } = useAuth()
   const canSeeReports = Boolean(
     userInfo?.roles?.some((r) => REPORT_ROLES.includes(r as UserRole))
@@ -119,7 +120,6 @@ export function PatientDetailsPage() {
             </Button>
           ) : null}
           {canManage && (
-          <>
             <Button
               type="button"
               variant="outline"
@@ -128,6 +128,8 @@ export function PatientDetailsPage() {
               <Pencil className="h-4 w-4" />
               Editar
             </Button>
+          )}
+          {canDeletePatient && (
             <Button
               type="button"
               variant="outline"
@@ -137,7 +139,6 @@ export function PatientDetailsPage() {
               <Trash2 className="h-4 w-4" />
               Excluir
             </Button>
-          </>
           )}
         </div>
       </header>
@@ -368,14 +369,16 @@ export function PatientDetailsPage() {
         </Card>
       </section>
 
-      <DeletePatientDialog
-        open={deleteOpen}
-        onOpenChange={(next) => {
-          if (!next) setDeleteOpen(false)
-        }}
-        patient={patient}
-        onDeleted={() => navigate('/app/pacientes', { replace: true })}
-      />
+      {canDeletePatient ? (
+        <DeletePatientDialog
+          open={deleteOpen}
+          onOpenChange={(next) => {
+            if (!next) setDeleteOpen(false)
+          }}
+          patient={patient}
+          onDeleted={() => navigate('/app/pacientes', { replace: true })}
+        />
+      ) : null}
     </div>
   )
 }

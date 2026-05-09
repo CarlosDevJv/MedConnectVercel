@@ -15,8 +15,11 @@ export interface CreateUserWithPasswordPayload {
   cpf: string
   phone?: string
   role: CreateUserWithPasswordAssignableRole
+  /** Cria linha nova em `patients` junto ao Auth (paciente novo). Ignorado se `existing_patient_id` vier preenchido. */
   create_patient_record?: boolean
   phone_mobile?: string
+  /** Enviado internamente quando o cadastro já carregado (edição): contrato POST `patient_id`. Não use na tela “Novo paciente”. */
+  existing_patient_id?: string
 }
 
 export interface CreateUserWithPasswordCreatedUser {
@@ -47,9 +50,15 @@ export async function createUserWithPassword(payload: CreateUserWithPasswordPayl
   if (payload.phone) {
     body.phone = payload.phone
   }
-  if (payload.create_patient_record && payload.role === 'paciente') {
-    body.create_patient_record = true
-    if (payload.phone_mobile) body.phone_mobile = payload.phone_mobile
+  if (payload.role === 'paciente') {
+    const existingId = payload.existing_patient_id?.trim()
+    if (existingId) {
+      body.patient_id = existingId
+      if (payload.phone_mobile) body.phone_mobile = payload.phone_mobile
+    } else if (payload.create_patient_record) {
+      body.create_patient_record = true
+      if (payload.phone_mobile) body.phone_mobile = payload.phone_mobile
+    }
   }
 
   return apiClient.post<CreateUserWithPasswordResponse, Record<string, unknown>>(

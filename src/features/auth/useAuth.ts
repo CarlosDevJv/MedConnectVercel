@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 import { AuthContext } from '@/features/auth/authContext'
-import { PATIENT_FORM_ROLES } from '@/lib/roleGroups'
+import { PATIENT_DELETE_ROLES, PATIENT_FORM_ROLES } from '@/lib/roleGroups'
 import type { UserRole } from '@/types/user'
 
 export function useAuth() {
@@ -24,6 +24,11 @@ export function useHasRole(...roles: UserRole[]): boolean {
 export function useCanManagePatients(): boolean {
   const current = useRoles()
   return current.some((r) => PATIENT_FORM_ROLES.includes(r))
+}
+
+export function useCanDeletePatients(): boolean {
+  const current = useRoles()
+  return current.some((r) => PATIENT_DELETE_ROLES.includes(r))
 }
 
 export function useIsRoleless(): boolean {

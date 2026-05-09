@@ -146,7 +146,8 @@ export function SecurityNotificationsHubPage() {
             title="Alertas por e-mail"
             body={
               <>
-                Fora dos fluxos de autenticação já documentados, não há fila/templates de comunicação institucional no Apidog. Definir primeiro contrato POST de dispatch e webhooks de entrega.
+                Fora dos fluxos de autenticação já existentes, ainda não há fila nem modelos institucionais de e‑mail —
+                depende do backend e políticas da clínica.
               </>
             }
           />
@@ -206,7 +207,7 @@ function ComingSoonPane({
       <Alert variant="default">
         <AlertTitle>Sem mock de dados falsos</AlertTitle>
         <AlertDescription>
-          Quando novos endpoints forem publicados no Apidog, substituímos este painel por telas funcionais usando o mesmo padrão de{' '}
+          Quando os serviços de notificação forem disponibilizados no backend, substituímos este painel por telas funcionais usando o mesmo padrão de{' '}
           <code>@/lib/apiClient</code>.
         </AlertDescription>
       </Alert>

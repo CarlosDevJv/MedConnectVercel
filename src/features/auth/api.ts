@@ -1,5 +1,5 @@
 import { getEnv } from '@/env'
-import { apiClient } from '@/lib/apiClient'
+import { ApiError, apiClient } from '@/lib/apiClient'
 import { getSupabase, setSessionPersistence } from '@/lib/supabase'
 import type { UserInfo } from '@/types/user'
 
@@ -37,14 +37,46 @@ export async function requestPasswordReset(email: string): Promise<ResetPassword
   )
 }
 
-export async function getUserInfo(): Promise<UserInfo> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 8000)
-  try {
-    return await apiClient.post<UserInfo>('/functions/v1/user-info', undefined, {
-      signal: controller.signal,
-    })
-  } finally {
-    clearTimeout(timer)
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+function isTransientUserInfoFailure(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    const { status } = error
+    if (status >= 400 && status < 500 && status !== 429) return false
+    return status >= 500 || status === 429
   }
+  if (!(error instanceof Error)) return false
+  if (error.name === 'AbortError') return true
+  return /aborted|AbortError|timeout|NetworkError|Failed to fetch/i.test(error.message)
+}
+
+/** Edge `user-info` pode “acordar” com cold start; aumenta prazo e tenta de novo sem alterar o esquema SQL. */
+export async function getUserInfo(): Promise<UserInfo> {
+  const timeoutMs = 20_000
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      return await apiClient.post<UserInfo>('/functions/v1/user-info', undefined, {
+        signal: controller.signal,
+      })
+    } catch (error) {
+      lastError = error
+      if (attempt < 2 && isTransientUserInfoFailure(error)) {
+        await sleep(550 * (attempt + 1))
+        continue
+      }
+      throw error
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Não foi possível carregar perfil do usuário')
 }

@@ -82,7 +82,7 @@ export function ReportDeliverySmsDialog({ report, open, onOpenChange }: ReportDe
     } catch (e) {
       if (isSmsServiceDisabled(e)) {
         toast.error('SMS indisponível no servidor.', {
-          description: 'O envio está desabilitado no backend; veja documentação Apidog (503 service-disabled).',
+          description: 'O envio está desabilitado no servidor (503). Solicite revisão ao suporte técnico.',
         })
         return
       }

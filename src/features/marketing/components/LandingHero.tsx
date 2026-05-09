@@ -54,7 +54,7 @@ export function LandingHero() {
                 to="/login"
                 className="inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] px-8 text-base font-semibold text-white shadow-md hover:bg-[var(--color-accent-solid-hover)]"
               >
-                Experimente grátis
+                Iniciar
               </Link>
               <a
                 href="#solucoes"

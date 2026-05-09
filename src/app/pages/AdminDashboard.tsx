@@ -223,14 +223,14 @@ export function AdminDashboard() {
             <ModuleCard
               icon={FileText}
               title="Relatórios médicos"
-              description="Laudos e relatórios médicos (Reports na API RiseUP)."
+              description="Laudos e relatórios médicos armazenados no sistema."
               status="active"
               to="/app/relatorios"
             />
             <ModuleCard
               icon={BarChart3}
               title="Indicadores"
-              description="Métricas agregadas a partir dos agendamentos (endpoints documentados)."
+              description="Métricas agregadas a partir dos agendamentos da clínica."
               status="active"
               to="/app/indicadores"
             />

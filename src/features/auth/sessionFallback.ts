@@ -1,6 +1,12 @@
 import type { Session, User } from '@supabase/supabase-js'
 
 import { ApiError } from '@/lib/apiClient'
+import {
+  extractPatientRecordId,
+  patientIdFromAuthClaims,
+  patientIdFromUserMetadata,
+} from '@/features/patient-portal/patientId'
+import { isClinicalStaffRole } from '@/lib/roleGroups'
 import type { UserInfo, UserRole } from '@/types/user'
 
 const KNOWN_ROLES: ReadonlySet<UserRole> = new Set([
@@ -75,14 +81,32 @@ function dedupeRoles(roles: UserRole[]): UserRole[] {
   return out
 }
 
+/** Alinha papel `paciente` com `patient.id` (API e/ou metadados do JWT, sem migração de banco). */
+function augmentPacientePortalRole(
+  roles: readonly (UserRole | string)[],
+  patientField: Record<string, unknown> | null | undefined
+): UserRole[] {
+  const base = sanitizeResolvedRoles(roles)
+  const pid = extractPatientRecordId(patientField ?? null)
+  if (!pid || base.includes('paciente')) return base
+  if (isClinicalStaffRole(base)) return base
+  return dedupeRoles([...base, 'paciente'])
+}
+
+function rolesFromSingleAuthMeta(meta: Record<string, unknown>): UserRole[] {
+  let r = coerceRoles(meta.roles)
+  if (r.length) return r
+  r = coerceRoles(meta.role)
+  if (r.length) return r
+  return coerceRoles(meta.user_role)
+}
+
 export function rolesFromSession(user: User | null | undefined): UserRole[] {
   if (!user) return []
-  const meta = (user.app_metadata ?? {}) as Record<string, unknown>
-  const fromRoles = coerceRoles(meta.roles)
-  if (fromRoles.length) return fromRoles
-  const fromRole = coerceRoles(meta.role)
-  if (fromRole.length) return fromRole
-  return coerceRoles(meta.user_role)
+  const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>
+  const userMeta = (user.user_metadata ?? {}) as Record<string, unknown>
+  /** Fluxos de cadastro por e‑mail frequentemente gravam `paciente` só em um dos dois metadatos. */
+  return dedupeRoles([...rolesFromSingleAuthMeta(appMeta), ...rolesFromSingleAuthMeta(userMeta)])
 }
 
 /**
@@ -98,9 +122,7 @@ export function rolesFromRemote(remote: unknown): UserRole[] {
   const obj = remote as Record<string, unknown>
   const collected: UserRole[] = []
 
-  collected.push(...coerceRoles(obj.roles))
-  collected.push(...coerceRoles(obj.role))
-  collected.push(...coerceRoles(obj.user_role))
+  collected.push(...rolesFromSingleAuthMeta(obj))
 
   if (Array.isArray(obj.user_roles)) {
     for (const entry of obj.user_roles) {
@@ -120,19 +142,36 @@ export function rolesFromRemote(remote: unknown): UserRole[] {
 
   const nestedUser = obj.user as Record<string, unknown> | undefined
   if (nestedUser) {
-    const meta = (nestedUser.app_metadata ?? {}) as Record<string, unknown>
-    collected.push(...coerceRoles(meta.roles))
-    collected.push(...coerceRoles(meta.role))
-    collected.push(...coerceRoles(meta.user_role))
+    const am = (nestedUser.app_metadata ?? {}) as Record<string, unknown>
+    const um = (nestedUser.user_metadata ?? {}) as Record<string, unknown>
+    collected.push(...rolesFromSingleAuthMeta(am))
+    collected.push(...rolesFromSingleAuthMeta(um))
   }
 
   return dedupeRoles(collected)
+}
+
+/** Algumas APIs mandam só `patient_id` na raiz; normaliza para objeto `patient`. */
+function loosePatientObjectFrom(remote: unknown): Record<string, unknown> | null {
+  const id = remote && typeof remote === 'object' ? patientIdFromUserMetadata(remote as Record<string, unknown>) : undefined
+  return id ? { id } : null
+}
+
+function mergePatientPointers(
+  primary: Record<string, unknown> | null | undefined,
+  secondary: Record<string, unknown> | null | undefined
+): Record<string, unknown> | null {
+  if (extractPatientRecordId(primary ?? null)) return primary ?? null
+  if (extractPatientRecordId(secondary ?? null)) return secondary ?? null
+  return null
 }
 
 export function buildFallbackUserInfo(session: Session | null): UserInfo | null {
   if (!session?.user) return null
   const user = session.user
   const userMeta = (user.user_metadata ?? {}) as Record<string, unknown>
+  const fromClaims = patientIdFromAuthClaims(user)
+  const patientStub = fromClaims ? { id: fromClaims } : null
 
   return {
     user: {
@@ -147,13 +186,13 @@ export function buildFallbackUserInfo(session: Session | null): UserInfo | null 
       phone: typeof userMeta.phone === 'string' ? (userMeta.phone as string) : null,
       avatar_url: typeof userMeta.avatar_url === 'string' ? (userMeta.avatar_url as string) : null,
     },
-    roles: rolesFromSession(user),
+    roles: augmentPacientePortalRole(rolesFromSession(user), patientStub),
     permissions: {
       isAdmin: false,
       canManageUsers: false,
     },
     doctor: null,
-    patient: null,
+    patient: patientStub,
   }
 }
 
@@ -173,11 +212,17 @@ export function hydrateUserInfo(
   const remoteRoles = rolesFromRemote(remote)
 
   if (!remote) return fallback
+
+  const coercedPatientRoot = loosePatientObjectFrom(remote as unknown)
+
   if (!fallback) {
     const raw = remoteRoles.length ? remoteRoles : (remote.roles ?? [])
+    const patientMerged =
+      mergePatientPointers(remote.patient ?? null, coercedPatientRoot) ?? remote.patient ?? null
     return {
       ...remote,
-      roles: sanitizeResolvedRoles(raw),
+      patient: patientMerged,
+      roles: augmentPacientePortalRole(raw, patientMerged ?? undefined),
     }
   }
 
@@ -186,6 +231,11 @@ export function hydrateUserInfo(
     : remote.roles?.length
       ? remote.roles
       : fallback.roles
+
+  const mergedPatient = mergePatientPointers(
+    mergePatientPointers(remote.patient ?? null, coercedPatientRoot),
+    fallback.patient ?? null
+  )
 
   return {
     user: {
@@ -197,10 +247,10 @@ export function hydrateUserInfo(
       phone: remote.profile?.phone ?? fallback.profile?.phone ?? null,
       avatar_url: remote.profile?.avatar_url ?? fallback.profile?.avatar_url ?? null,
     },
-    roles: sanitizeResolvedRoles(resolvedRoles),
+    roles: augmentPacientePortalRole(resolvedRoles, mergedPatient ?? undefined),
     permissions: remote.permissions ?? fallback.permissions,
-    doctor: remote.doctor ?? null,
-    patient: remote.patient ?? null,
+    doctor: remote.doctor ?? fallback.doctor ?? null,
+    patient: mergedPatient as UserInfo['patient'],
   }
 }
 

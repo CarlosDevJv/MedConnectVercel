@@ -29,37 +29,6 @@ const cpfDigitsRegex = /^\d{11}$/
 const cepRegex = /^\d{8}$/
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/
 
-/**
- * Schema for the public auto-registration flow (kept compatible with the
- * existing edge function payload).
- */
-export const registerPatientSchema = z.object({
-  full_name: z
-    .string()
-    .trim()
-    .min(3, 'Mínimo de 3 caracteres')
-    .max(120, 'Máximo de 120 caracteres')
-    .refine((s) => !s.includes('@'), 'Informe um nome próprio; não use email no campo nome.'),
-  email: z.string().min(1, 'Informe seu email').email('Email inválido'),
-  cpf: z
-    .string()
-    .min(1, 'Informe seu CPF')
-    .refine((value) => isValidCpf(value), 'CPF inválido'),
-  phone_mobile: z
-    .string()
-    .min(1, 'Informe seu telefone')
-    .refine(
-      (value) => phoneRegex.test(stripNonDigits(value)),
-      'Telefone deve ter 10 ou 11 dígitos'
-    ),
-  birth_date: z
-    .string()
-    .optional()
-    .refine((value) => !value || isoDateRegex.test(value), 'Data inválida (use AAAA-MM-DD)'),
-})
-
-export type RegisterPatientValues = z.infer<typeof registerPatientSchema>
-
 const baseFullSchema = z.object({
   full_name: z
     .string()
@@ -171,12 +140,37 @@ const baseFullSchema = z.object({
 })
 
 export const createPatientSchema = baseFullSchema
+  .extend({
+    /** Senha inicial opcional (portal). Envio só no cadastro; preenchimento dispara create-user-with-password + PATCH. */
+    password: z.string().optional().transform((v) => (typeof v === 'string' ? v.trim() : '')),
+  })
+  .superRefine((data, ctx) => {
+    if (data.password.length > 0 && data.password.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'A senha deve ter no mínimo 6 caracteres',
+        path: ['password'],
+      })
+    }
+  })
 export type CreatePatientValues = z.infer<typeof createPatientSchema>
 
 /** Edit form: excludes CPF (immutable) but keeps the rest editable. */
-export const updatePatientSchema = baseFullSchema.extend({
-  cpf: z.string().optional(),
-})
+export const updatePatientSchema = baseFullSchema
+  .extend({
+    cpf: z.string().optional(),
+    /** Senha opcional: apenas para criar acesso ao portal vinculado a este paciente já existente. */
+    password: z.string().optional().transform((v) => (typeof v === 'string' ? v.trim() : '')),
+  })
+  .superRefine((data, ctx) => {
+    if (data.password.length > 0 && data.password.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'A senha deve ter no mínimo 6 caracteres',
+        path: ['password'],
+      })
+    }
+  })
 export type UpdatePatientValues = z.infer<typeof updatePatientSchema>
 
 export {

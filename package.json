@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "create-demo-patient": "node scripts/create-demo-patient.mjs"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.2.9",

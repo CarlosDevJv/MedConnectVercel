@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom'
-
 import { contactMailtoHref } from '@/features/marketing/data'
 
 export function LandingFinalCta() {
@@ -13,16 +11,9 @@ export function LandingFinalCta() {
           Pronto para transformar sua clínica?
         </h2>
         <p className="mt-4 text-lg text-white/90">
-          Acesse com sua conta e avancemos juntos na configuração inicial. Prefere uma apresentação antes? Solicite pelo link
-          abaixo.
+          Use o botão Iniciar no topo da página para abrir o cadastro. Prefere uma demonstração antes?
         </p>
-        <Link
-          to="/login"
-          className="mt-10 inline-flex h-14 w-full max-w-md items-center justify-center rounded-[var(--radius-md)] bg-white px-8 text-base font-bold text-[var(--color-accent-ink)] shadow-lg hover:bg-white/95 sm:w-auto"
-        >
-          Experimente grátis agora
-        </Link>
-        <p className="mt-6">
+        <p className="mt-10">
           <a
             href={contactMailtoHref}
             className="text-sm font-semibold text-white/95 underline-offset-4 hover:underline"

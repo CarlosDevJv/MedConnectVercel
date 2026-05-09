@@ -78,7 +78,6 @@ export function NewAppointmentSheet({
   defaultDate,
   onCompleted,
 }: NewAppointmentSheetProps) {
-  const [tab, setTab] = React.useState<'agendamento' | 'outros'>('agendamento')
   const [patientQuery, setPatientQuery] = React.useState('')
   const debouncedPatient = useDebouncedValue(patientQuery, 320)
   const [blockAgenda, setBlockAgenda] = React.useState(false)
@@ -210,37 +209,7 @@ export function NewAppointmentSheet({
           </p>
         </SheetHeader>
 
-        <div className="flex gap-2 border-b border-[var(--color-border)] px-6">
-          <button
-            type="button"
-            className={`border-b-2 px-2 py-3 text-sm font-medium transition-colors ${
-              tab === 'agendamento'
-                ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-                : 'border-transparent text-[var(--color-muted-foreground)]'
-            }`}
-            onClick={() => setTab('agendamento')}
-          >
-            Agendamento
-          </button>
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed border-b-2 border-transparent px-2 py-3 text-sm text-[var(--color-muted-foreground)] opacity-50"
-          >
-            Procedimento
-          </button>
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed border-b-2 border-transparent px-2 py-3 text-sm text-[var(--color-muted-foreground)] opacity-50"
-          >
-            Financeiro
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-4 px-6 py-6">
-          {tab === 'agendamento' && (
-            <>
               <div className="space-y-2">
                 <Label htmlFor="doctor_id">Profissional</Label>
                 <Select
@@ -386,8 +355,6 @@ export function NewAppointmentSheet({
                   />
                 </div>
               )}
-            </>
-          )}
 
           <FieldError message={errors.date?.message} />
 

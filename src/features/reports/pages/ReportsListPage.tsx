@@ -151,9 +151,8 @@ export function ReportsListPage() {
           </Button>
         </div>
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Listagem conforme filtros da API RiseUP (<code className="text-xs">patient_id</code>,{' '}
-          <code className="text-xs">created_by</code>). A busca só refina os registros já carregados nesta
-          página.
+          Filtros por <code className="text-xs">patient_id</code> e <code className="text-xs">created_by</code> quando
+          aplicáveis. A busca por texto refina os registros já carregados nesta página.
         </p>
       </header>
 

@@ -57,6 +57,19 @@ export async function countDoctors(): Promise<number> {
   return list.total
 }
 
+/** Nomes de médicos por id (lista de compromissos do paciente, etc.). */
+export async function batchDoctorNames(doctorIds: string[]): Promise<Record<string, string>> {
+  const unique = [...new Set(doctorIds.filter(Boolean))]
+  if (!unique.length) return {}
+  const usp = new URLSearchParams()
+  usp.set('select', 'id,full_name')
+  usp.set('id', `in.(${unique.join(',')})`)
+  const rows = await apiClient.get<{ id: string; full_name: string }[]>(
+    `/rest/v1/doctors?${usp.toString()}`
+  )
+  return Object.fromEntries(rows.map((r) => [r.id, r.full_name]))
+}
+
 export async function getDoctor(id: string): Promise<Doctor> {
   const usp = new URLSearchParams({
     id: `eq.${id}`,

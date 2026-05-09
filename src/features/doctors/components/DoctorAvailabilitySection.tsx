@@ -129,18 +129,9 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
         Disponibilidade na agenda
       </div>
       <p className="mb-4 text-sm text-[var(--color-muted-foreground)]">
-        Contrato RiseUP{' '}
-        <a
-          href="https://do5wegrct3.apidog.io/criar-disponibilidade-23129823e0"
-          target="_blank"
-          rel="noreferrer"
-          className="text-[var(--color-accent)] underline-offset-2 hover:underline"
-        >
-          Criar disponibilidade
-        </a>
-        : dia 0–6 (domingo a sábado), horários HH:MM, slot {DOCTOR_AVAILABILITY_API_SLOT_MIN}–
-        {DOCTOR_AVAILABILITY_API_SLOT_MAX} min (padrão {DOCTOR_AVAILABILITY_API_SLOT_DEFAULT}). Exceções
-        ficam na agenda.
+        Use dia 0–6 (domingo a sábado), horários HH:MM e intervalo de slot entre{' '}
+        {DOCTOR_AVAILABILITY_API_SLOT_MIN}–{DOCTOR_AVAILABILITY_API_SLOT_MAX} min (padrão{' '}
+        {DOCTOR_AVAILABILITY_API_SLOT_DEFAULT}). Exceções ficam na agenda.
       </p>
 
       {listQuery.isError && (

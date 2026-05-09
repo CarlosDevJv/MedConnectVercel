@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Lock, Mail, UserPlus } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import * as React from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
@@ -153,17 +153,6 @@ export function LoginCard() {
               {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-
-          <p className="mt-8 text-center text-xs text-[var(--color-muted-foreground)]">
-            Primeira vez aqui? Crie sua conta para agendar consultas.
-          </p>
-
-          <Button asChild variant="outline" fullWidth size="lg" className="mt-2.5">
-            <Link to="/cadastro">
-              <UserPlus className="h-[18px] w-[18px] text-[var(--color-accent)]" />
-              Cadastre-se
-            </Link>
-          </Button>
         </div>
       </div>
 

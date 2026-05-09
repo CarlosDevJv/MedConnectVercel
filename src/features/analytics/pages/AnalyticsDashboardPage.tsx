@@ -65,21 +65,12 @@ export function AnalyticsDashboardPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-display text-2xl text-[var(--color-foreground)]">Indicadores</h1>
             <span className="rounded-full border border-emerald-300/80 bg-emerald-50/95 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-950">
-              Só agendamentos (API)
+              Só agendamentos
             </span>
           </div>
           <p className="text-sm text-[var(--color-muted-foreground)]">
-            Números calculados exclusivamente a partir dos endpoints de médicos, agendamentos e pacientes
-            descritos na{' '}
-            <a
-              className="font-medium text-[var(--color-accent)] underline-offset-2 hover:underline"
-              href="https://do5wegrct3.apidog.io/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Apidog RiseUP
-            </a>
-            . Não há faturamento nem convênio na API pública — esses blocos foram removidos.
+            Números calculados com base nos cadastros de médicos, pacientes e agendamentos registrados na plataforma.
+            Métricas de faturamento ou convênio não entram neste painel.
           </p>
         </div>
       </header>

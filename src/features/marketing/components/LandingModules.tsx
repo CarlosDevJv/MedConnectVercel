@@ -32,7 +32,7 @@ export function LandingModules() {
             </span>
             <h3 className="mt-8 text-xl font-semibold text-[var(--color-foreground)]">Laudos e pacientes</h3>
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">
-              Cadastro de pacientes e relatórios médicos conforme os recursos publicados na documentação RiseUP (Apidog).
+              Cadastro de pacientes e relatórios médicos padronizados para a rotina assistencial da clínica.
             </p>
           </article>
         </div>

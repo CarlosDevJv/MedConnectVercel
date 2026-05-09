@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import * as React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -8,12 +9,18 @@ import {
   PatientForm,
   type PatientFormHandle,
 } from '@/features/patients/components/PatientForm'
-import { useCreatePatient, usePatient, useUpdatePatient } from '@/features/patients/hooks'
+import {
+  createPatient,
+  type CreatePatientPayload,
+  type UpdatePatientPayload,
+  updatePatient,
+} from '@/features/patients/api'
+import { patientKeys, usePatient, useUpdatePatient } from '@/features/patients/hooks'
 import type { CreatePatientValues, UpdatePatientValues } from '@/features/patients/schemas'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
 import { parseDecimal } from '@/features/patients/utils/decimal'
+import { createUserWithPassword } from '@/features/users/api'
 import { ApiError } from '@/lib/apiClient'
-import type { CreatePatientPayload, UpdatePatientPayload } from '@/features/patients/api'
 
 interface PatientFormPageProps {
   mode: 'create' | 'edit'
@@ -26,14 +33,51 @@ export function PatientFormPage({ mode }: PatientFormPageProps) {
 function CreatePatientPage() {
   const navigate = useNavigate()
   const formRef = React.useRef<PatientFormHandle>(null)
-  const createMutation = useCreatePatient()
+  const queryClient = useQueryClient()
+
+  const createMutation = useMutation({
+    mutationFn: async (values: CreatePatientValues) => {
+      const password = values.password?.trim() ?? ''
+      if (password) {
+        const phoneDigits = stripNonDigits(values.phone1 ?? '')
+        const res = await createUserWithPassword({
+          email: values.email.trim(),
+          password,
+          full_name: values.full_name.trim(),
+          cpf: stripNonDigits(values.cpf),
+          role: 'paciente',
+          create_patient_record: true,
+          phone_mobile: stripNonDigits(values.phone_mobile),
+          ...(phoneDigits ? { phone: phoneDigits } : {}),
+        })
+        const patientId = res.patient_id
+        if (!patientId) {
+          throw new ApiError({
+            message:
+              res.message ??
+              'Conta criada, mas a API não retornou o ID do paciente. Verifique na lista ou tente editar após corrigir no backend.',
+            status: 502,
+            raw: res,
+          })
+        }
+        await updatePatient(patientId, toUpdatePayloadFromCreate(values))
+        return { patient_id: patientId }
+      }
+      return createPatient(buildCreatePayload(values))
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: patientKeys.all })
+    },
+  })
 
   async function handleSubmit(values: CreatePatientValues) {
     try {
-      const payload = buildCreatePayload(values)
-      const response = await createMutation.mutateAsync(payload)
-      toast.success('Paciente cadastrado', {
-        description: `${values.full_name.trim()} foi adicionado(a) à base.`,
+      const response = await createMutation.mutateAsync(values)
+      const withPortal = Boolean(values.password?.trim())
+      toast.success(withPortal ? 'Paciente cadastrado com acesso' : 'Paciente cadastrado', {
+        description: withPortal
+          ? `${values.full_name.trim()} pode entrar com e-mail e senha definidos.`
+          : `${values.full_name.trim()} foi adicionado(a) à base.`,
       })
       if (response.patient_id) {
         navigate(`/app/pacientes/${response.patient_id}`, { replace: true })
@@ -48,7 +92,7 @@ function CreatePatientPage() {
   return (
     <PageShell
       title="Novo paciente"
-      subtitle="Preencha o cadastro completo. Apenas os campos com * são obrigatórios."
+      subtitle="Preencha o cadastro completo. Apenas os campos com * são obrigatórios. Opcionalmente defina senha inicial para o paciente acessar o portal."
       onBack={() => navigate('/app/pacientes')}
     >
       <PatientForm
@@ -72,10 +116,26 @@ function EditPatientPage() {
 
   async function handleSubmit(values: UpdatePatientValues) {
     try {
+      const password = values.password?.trim() ?? ''
       const payload = buildUpdatePayload(values)
       const updated = await updateMutation.mutateAsync(payload)
+      if (password) {
+        const phoneDigits = stripNonDigits(values.phone1 ?? '')
+        await createUserWithPassword({
+          email: updated.email.trim(),
+          password,
+          full_name: updated.full_name.trim(),
+          cpf: stripNonDigits(updated.cpf),
+          role: 'paciente',
+          existing_patient_id: updated.id,
+          phone_mobile: stripNonDigits(updated.phone_mobile ?? ''),
+          ...(phoneDigits ? { phone: phoneDigits } : {}),
+        })
+      }
       toast.success('Paciente atualizado', {
-        description: `As alterações em ${updated.full_name} foram salvas.`,
+        description: password
+          ? `${updated.full_name}: dados salvos e portal habilitado com a senha definida.`
+          : `As alterações em ${updated.full_name} foram salvas.`,
       })
       navigate(`/app/pacientes/${updated.id}`, { replace: true })
     } catch (error) {
@@ -166,6 +226,11 @@ function PageShell({
   )
 }
 
+function toUpdatePayloadFromCreate(values: CreatePatientValues): UpdatePatientPayload {
+  const { password: _omit, ...rest } = values
+  return buildUpdatePayload(rest as UpdatePatientValues)
+}
+
 function buildCreatePayload(values: CreatePatientValues): CreatePatientPayload {
   return {
     full_name: values.full_name.trim(),
@@ -225,7 +290,7 @@ function buildCreatePayload(values: CreatePatientValues): CreatePatientPayload {
   }
 }
 
-function buildUpdatePayload(values: UpdatePatientValues): UpdatePatientPayload {
+function buildUpdatePayload({ password: _omit, ...values }: UpdatePatientValues): UpdatePatientPayload {
   const nullableString = (value: string | undefined) => {
     const trimmed = value?.trim()
     return trimmed ? trimmed : null
@@ -340,11 +405,12 @@ function handleApiError(
 
     if (error.status === 400) {
       if (error.fieldErrors) {
+        const fieldMap: Record<string, keyof CreatePatientValues> = {
+          phone: 'phone_mobile',
+        }
         for (const [field, msgs] of Object.entries(error.fieldErrors)) {
-          formRef.current?.setFieldError(
-            field as keyof CreatePatientValues,
-            msgs.join(', ')
-          )
+          const target = (fieldMap[field] ?? field) as keyof CreatePatientValues
+          formRef.current?.setFieldError(target, msgs.join(', '))
         }
         return
       }

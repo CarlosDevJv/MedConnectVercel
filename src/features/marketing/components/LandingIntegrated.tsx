@@ -32,7 +32,7 @@ export function LandingIntegrated() {
             </span>
             <h3 className="mt-6 text-xl font-semibold text-[var(--color-foreground)]">Comunicação automática</h3>
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">
-              SMS transacional (contrato RiseUP) pode acompanhar agendamentos quando integrado à operação da clínica.
+              SMS transacional pode acompanhar agendamentos e avisos quando integrado à operação da clínica.
             </p>
           </article>
         </div>

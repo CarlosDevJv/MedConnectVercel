@@ -124,9 +124,6 @@ export function AgendaToolbar({
       </div>
 
       <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[260px] lg:justify-end">
-        <Button type="button" variant="outline" size="sm" disabled title="Em breve">
-          Baixar PDF
-        </Button>
         <Select
           value={statusFilter}
           onValueChange={(v) => onStatusFilter(v as AppointmentStatus | 'all')}
