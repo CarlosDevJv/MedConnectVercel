@@ -28,10 +28,19 @@ async function pickIdFromPatientsQuery(
  * permitam leitura de `patients` para o próprio usuário (ex.: e-mail igual ao cadastro ou CPF em metadados).
  */
 async function lookupPatientSelfRowByProfile(opts: {
+  authUserId?: string
   emails: string[]
   cpfDigits?: string
 }): Promise<string | undefined> {
   const sb = getSupabase()
+  const uid = opts.authUserId?.trim()
+  if (uid) {
+    const byUser = await pickIdFromPatientsQuery(
+      sb.from('patients').select('id').eq('user_id', uid).maybeSingle()
+    )
+    if (byUser) return byUser
+  }
+
   const emailNormSeen = new Set<string>()
 
   for (let raw of opts.emails) {
@@ -90,30 +99,39 @@ export function usePatientPortalPatientResolution() {
       appMetadata: u?.app_metadata as Record<string, unknown> | undefined,
     }) ?? undefined
 
+  const authUserId = u?.id?.trim() ?? ''
   const lookupKeyEmails = [...emails].sort().join('|')
 
   const hasEmailCandidate = emails.some((e) => e.trim().length > 0)
   const hasCpfCandidate = Boolean(cpfDigits && cpfDigits.replace(/\D/g, '').length === 11)
+  const hasAuthUidCandidate = Boolean(authUserId)
 
   const canLookupProfile =
     status === 'authenticated' &&
     userEnrichmentSynced &&
     !staff &&
     jwtResolved === undefined &&
-    (hasEmailCandidate || hasCpfCandidate)
+    (hasAuthUidCandidate || hasEmailCandidate || hasCpfCandidate)
 
   const lookup = useQuery({
-    queryKey: ['patient-portal', 'self-local', lookupKeyEmails, cpfDigits ?? ''],
-    enabled: Boolean(canLookupProfile && (hasEmailCandidate || hasCpfCandidate)),
+    queryKey: ['patient-portal', 'self-local', authUserId, lookupKeyEmails, cpfDigits ?? ''],
+    enabled: Boolean(
+      canLookupProfile && (hasAuthUidCandidate || hasEmailCandidate || hasCpfCandidate)
+    ),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: false,
-    queryFn: () => lookupPatientSelfRowByProfile({ emails, cpfDigits }),
+    queryFn: () =>
+      lookupPatientSelfRowByProfile({ authUserId: authUserId || undefined, emails, cpfDigits }),
   })
 
   const resolvedId = jwtResolved ?? lookup.data ?? undefined
 
-  const pendingEmailLookup = Boolean(canLookupProfile && jwtResolved === undefined && lookup.isPending)
+  const pendingEmailLookup = Boolean(
+    canLookupProfile &&
+      jwtResolved === undefined &&
+      (lookup.isPending || (lookup.isFetching && lookup.data === undefined))
+  )
 
   return {
     resolvedId,

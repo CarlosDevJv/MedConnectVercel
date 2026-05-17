@@ -21,6 +21,7 @@ import type {
 import type { Doctor } from '@/features/doctors/types'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 
 type Mode = { mode: 'create' } | { mode: 'edit'; doctor: Doctor }
 
@@ -106,8 +107,8 @@ export function DoctorFormDrawer({
   function handleApiError(error: unknown, action: 'create' | 'update') {
     if (error instanceof ApiError) {
       if (error.status === 403) {
-        toast.error('Sem permissão', {
-          description: 'Você não tem permissão para realizar essa ação.',
+        toastFromError(error, {
+          permissionDescription: 'Você não tem permissão para realizar essa ação.',
         })
         return
       }
@@ -125,7 +126,7 @@ export function DoctorFormDrawer({
           formRef.current?.setFieldError('crm', error.message || 'CRM já cadastrado.')
           return
         }
-        toast.error('Cadastro duplicado', { description: error.message })
+        toastFromError(error, { conflict: 'registration' })
         return
       }
 
@@ -139,19 +140,17 @@ export function DoctorFormDrawer({
           }
           return
         }
-        toast.error('Dados inválidos', { description: error.message })
+        toastFromError(error, {})
         return
       }
 
-      toast.error(action === 'create' ? 'Erro ao cadastrar médico' : 'Erro ao atualizar médico', {
-        description: error.message || 'Tente novamente.',
+      toastFromError(error, {
+        operationTitle: action === 'create' ? 'Erro ao cadastrar médico' : 'Erro ao atualizar médico',
       })
       return
     }
 
-    toast.error('Erro inesperado', {
-      description: error instanceof Error ? error.message : 'Tente novamente.',
-    })
+    toastFromError(error, {})
   }
 
   const isEdit = state.mode === 'edit'

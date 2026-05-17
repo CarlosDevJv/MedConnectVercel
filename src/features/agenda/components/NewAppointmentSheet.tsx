@@ -34,6 +34,7 @@ import { DOCTOR_AVAILABILITY_API_SLOT_DEFAULT } from '@/features/agenda/utils/do
 import type { Doctor } from '@/features/doctors/types'
 import { listPatients } from '@/features/patients/api'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { formatPostgresLocalTimePtBr } from '@/lib/formatTimePtBr'
 import { useQuery } from '@tanstack/react-query'
@@ -156,7 +157,7 @@ export function NewAppointmentSheet({
         onCompleted?.()
       } catch (e) {
         console.error(e)
-        toast.error('Não foi possível criar o bloqueio.')
+        toastFromError(e, { operationTitle: 'Não foi possível criar o bloqueio.' })
       }
       return
     }
@@ -190,7 +191,7 @@ export function NewAppointmentSheet({
       onCompleted?.()
     } catch (e) {
       console.error(e)
-      toast.error('Não foi possível criar o agendamento.')
+      toastFromError(e, { operationTitle: 'Não foi possível criar o agendamento.' })
     }
   }
 

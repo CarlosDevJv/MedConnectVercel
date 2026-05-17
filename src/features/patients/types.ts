@@ -39,6 +39,8 @@ export const PREFERRED_CONTACT_LABELS: Record<PreferredContact, string> = {
 
 export interface Patient {
   id: string
+  /** FK opcional para `auth.users` — populado por trigger/backfill no Supabase (portal paciente / RLS). */
+  user_id?: string | null
   full_name: string
   social_name: string | null
   email: string

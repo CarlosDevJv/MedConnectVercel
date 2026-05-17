@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { loginWithPassword } from '@/features/auth/api'
 import { BrandWordmark } from '@/features/auth/components/BrandWordmark'
+import { logoutSession } from '@/features/auth/logoutSession'
 import { ForgotPasswordDialog } from '@/features/auth/components/ForgotPasswordDialog'
 import { loginSchema, type LoginValues } from '@/features/auth/schemas'
 import { useAuth } from '@/features/auth/useAuth'
@@ -15,10 +16,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { FieldError } from '@/components/ui/field-error'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { HTTP_ERROR_RATE_LIMIT } from '@/lib/httpErrorMessages'
+import { getSupabase } from '@/lib/supabase'
 
 export function LoginCard() {
   const navigate = useNavigate()
   const { refreshUserInfo } = useAuth()
+  const [loginGateReady, setLoginGateReady] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   const [forgotOpen, setForgotOpen] = React.useState(false)
   const [defaultForgotEmail, setDefaultForgotEmail] = React.useState('')
@@ -38,6 +42,26 @@ export function LoginCard() {
     },
   })
 
+  React.useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const {
+          data: { session },
+        } = await getSupabase().auth.getSession()
+        if (cancelled) return
+        if (session) await logoutSession()
+      } catch {
+        // sessão residual ou storage bloqueado — segue para o formulário
+      } finally {
+        if (!cancelled) setLoginGateReady(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   function openForgotDialog() {
     setDefaultForgotEmail(getValues('email') ?? '')
     setForgotOpen(true)
@@ -54,14 +78,37 @@ export function LoginCard() {
       toast.success('Login realizado com sucesso.')
       navigate('/app', { replace: true })
     } catch (error) {
+      const rawMsg = error instanceof Error ? error.message : ''
+      const lower = rawMsg.toLowerCase()
+      if (
+        lower.includes('rate') ||
+        lower.includes('too many') ||
+        lower.includes('429') ||
+        lower.includes('over_email_send_rate')
+      ) {
+        toast.error(HTTP_ERROR_RATE_LIMIT)
+        return
+      }
       const message =
         error instanceof Error
-          ? error.message.toLowerCase().includes('invalid login')
+          ? lower.includes('invalid login')
             ? 'Email ou senha incorretos.'
             : error.message
           : 'Não foi possível autenticar. Tente novamente.'
       toast.error('Falha no login', { description: message })
     }
+  }
+
+  if (!loginGateReady) {
+    return (
+      <div
+        role="status"
+        aria-label="Carregando"
+        className="grid w-full max-w-[420px] place-items-center py-16"
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)]" />
+      </div>
+    )
   }
 
   return (

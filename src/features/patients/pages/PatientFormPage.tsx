@@ -12,6 +12,7 @@ import {
 import {
   createPatient,
   type CreatePatientPayload,
+  registerPatientWithPassword,
   type UpdatePatientPayload,
   updatePatient,
 } from '@/features/patients/api'
@@ -21,6 +22,9 @@ import { stripNonDigits } from '@/features/patients/utils/cpf'
 import { parseDecimal } from '@/features/patients/utils/decimal'
 import { createUserWithPassword } from '@/features/users/api'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
+
+const REGISTER_CONFLICT_CODE = 'PATIENT_REGISTER_CONFLICT'
 
 interface PatientFormPageProps {
   mode: 'create' | 'edit'
@@ -39,16 +43,13 @@ function CreatePatientPage() {
     mutationFn: async (values: CreatePatientValues) => {
       const password = values.password?.trim() ?? ''
       if (password) {
-        const phoneDigits = stripNonDigits(values.phone1 ?? '')
-        const res = await createUserWithPassword({
+        const res = await registerPatientWithPassword({
           email: values.email.trim(),
           password,
           full_name: values.full_name.trim(),
-          cpf: stripNonDigits(values.cpf),
-          role: 'paciente',
-          create_patient_record: true,
           phone_mobile: stripNonDigits(values.phone_mobile),
-          ...(phoneDigits ? { phone: phoneDigits } : {}),
+          cpf: stripNonDigits(values.cpf),
+          birth_date: values.birth_date?.trim() ?? '',
         })
         const patientId = res.patient_id
         if (!patientId) {
@@ -383,14 +384,23 @@ function handleApiError(
   formRef: React.RefObject<PatientFormHandle | null>
 ) {
   if (error instanceof ApiError) {
+    if (error.status === 429 || error.status === 500) {
+      toastFromError(error, {})
+      return
+    }
+
     if (error.status === 403) {
-      toast.error('Sem permissão', {
-        description: 'Você não tem permissão para realizar essa ação.',
+      toastFromError(error, {
+        permissionDescription: 'Você não tem permissão para realizar essa ação.',
       })
       return
     }
 
     if (error.status === 409) {
+      if (error.code === REGISTER_CONFLICT_CODE) {
+        toastFromError(error, { conflict: 'registration' })
+        return
+      }
       if (error.code === 'CPF_EXISTS' || /cpf/i.test(error.message)) {
         formRef.current?.setFieldError('cpf', error.message || 'CPF já cadastrado.')
         return
@@ -399,7 +409,7 @@ function handleApiError(
         formRef.current?.setFieldError('email', error.message || 'Email já cadastrado.')
         return
       }
-      toast.error('Cadastro duplicado', { description: error.message })
+      toastFromError(error, { conflict: 'registration' })
       return
     }
 
@@ -414,18 +424,16 @@ function handleApiError(
         }
         return
       }
-      toast.error('Dados inválidos', { description: error.message })
+      toastFromError(error, {})
       return
     }
 
-    toast.error(
-      action === 'create' ? 'Erro ao cadastrar paciente' : 'Erro ao atualizar paciente',
-      { description: error.message || 'Tente novamente.' }
-    )
+    toastFromError(error, {
+      operationTitle:
+        action === 'create' ? 'Erro ao cadastrar paciente' : 'Erro ao atualizar paciente',
+    })
     return
   }
 
-  toast.error('Erro inesperado', {
-    description: error instanceof Error ? error.message : 'Tente novamente.',
-  })
+  toastFromError(error, {})
 }

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCreateReportMutation } from '@/features/reports/hooks'
 import { useListPatients } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
+import { toastFromError } from '@/lib/apiErrorToast'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
 export function ReportNewPage() {
@@ -32,8 +33,8 @@ export function ReportNewPage() {
           toast.success('Laudo criado. Continue editando.')
           navigate(`/app/relatorios/${report.id}/editar`, { replace: true })
         },
-        onError: () => {
-          toast.error('Não foi possível criar o relatório.')
+        onError: (err) => {
+          toastFromError(err, { operationTitle: 'Não foi possível criar o relatório.' })
         },
       }
     )

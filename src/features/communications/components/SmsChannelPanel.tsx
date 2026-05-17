@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label'
 import { isSmsServiceDisabled } from '@/features/communications/api'
 import { useSendSmsMutation } from '@/features/communications/hooks'
 import { toE164Preferred } from '@/features/communications/utils/phone'
+import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 import { cn } from '@/lib/cn'
 
 const MSG_MAX = 1000
@@ -59,8 +61,13 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
         })
         return
       }
-      const description = err instanceof Error ? err.message : 'Erro ao enviar.'
-      toast.error('Falha no envio', { description })
+      if (err instanceof ApiError) {
+        toastFromError(err, { operationTitle: 'Falha no envio' })
+        return
+      }
+      toast.error('Falha no envio', {
+        description: err instanceof Error ? err.message : 'Erro ao enviar.',
+      })
     }
   }
 
@@ -141,7 +148,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3 border-l-[3px] border-emerald-600/90 pl-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-800/90">Canal disponível</p>
-          <h3 className="font-display text-xl font-medium italic text-[var(--color-foreground)]">SMS (Twilio)</h3>
+          <h3 className="font-display text-xl font-medium text-[var(--color-foreground)]">SMS (Twilio)</h3>
           <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-muted-foreground)]">
             Envio de mensagens pela integração configurada pelo MediConnect (<code className="text-xs">send-sms</code>).
           </p>
@@ -173,7 +180,7 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
                 SMS · Twilio
               </span>
             </div>
-            <h1 className="font-display text-[2.05rem] font-medium italic leading-[1.12] tracking-tight text-[var(--color-foreground)] sm:text-[2.35rem]">
+            <h1 className="font-display text-[2.05rem] font-medium leading-[1.12] tracking-tight text-[var(--color-foreground)] sm:text-[2.35rem]">
               Canal de comunicação
             </h1>
             <p className="max-w-xl text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">

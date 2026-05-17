@@ -36,6 +36,7 @@ import {
   COMMUNICATIONS_ROLES,
   DOCTOR_DIRECTORY_ROLES,
   DOCTOR_MANAGEMENT_ROLES,
+  PATIENT_CREATE_ROLES,
   PATIENT_FORM_ROLES,
   PATIENT_READ_ROLES,
   REPORT_ROLES,
@@ -55,7 +56,7 @@ const appChildren: RouteObject[] = [
   {
     path: 'pacientes/novo',
     element: (
-      <RequireRole roles={[...PATIENT_FORM_ROLES]}>
+      <RequireRole roles={[...PATIENT_CREATE_ROLES]}>
         <PatientFormPage mode="create" />
       </RequireRole>
     ),
@@ -202,7 +203,8 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingPage />,
-  },  {
+  },
+  {
     element: (
       <RedirectIfAuthed>
         <PublicLayout />

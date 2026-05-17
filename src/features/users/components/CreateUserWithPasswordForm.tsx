@@ -15,6 +15,7 @@ import {
   type CreateSecretariaUserWithPasswordValues,
 } from '@/features/users/schemas'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 
 function mapApiValidationField(apiKey: string): keyof CreateSecretariaUserWithPasswordValues | null {
   const allowed: Partial<Record<string, keyof CreateSecretariaUserWithPasswordValues>> = {
@@ -75,8 +76,8 @@ export function CreateUserWithPasswordForm() {
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 403) {
-          toast.error('Sem permissão', {
-            description:
+          toastFromError(error, {
+            permissionDescription:
               'Apenas perfis autorizados (admin/gestor conforme política da API) podem criar usuários.',
           })
           return
@@ -91,7 +92,7 @@ export function CreateUserWithPasswordForm() {
             setError('cpf', { message: error.message })
             return
           }
-          toast.error('Cadastro duplicado', { description: error.message })
+          toastFromError(error, { conflict: 'registration' })
           return
         }
 
@@ -107,21 +108,15 @@ export function CreateUserWithPasswordForm() {
             }
             if (applied) return
           }
-          toast.error('Dados inválidos', {
-            description: error.message ?? 'Revise os campos.',
-          })
+          toastFromError(error, {})
           return
         }
 
-        toast.error('Erro ao criar usuário', {
-          description: error.message || 'Tente novamente.',
-        })
+        toastFromError(error, { operationTitle: 'Erro ao criar usuário' })
         return
       }
 
-      toast.error('Erro inesperado', {
-        description: error instanceof Error ? error.message : 'Tente novamente.',
-      })
+      toastFromError(error, {})
     }
   }
 

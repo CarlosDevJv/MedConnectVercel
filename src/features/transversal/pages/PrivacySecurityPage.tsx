@@ -20,7 +20,7 @@ export function PrivacySecurityPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-muted-foreground)]">
               Institucional
             </p>
-            <h1 className="font-display mt-1 text-[2rem] font-medium italic tracking-tight text-[var(--color-foreground)]">
+            <h1 className="font-display mt-1 text-[2rem] font-medium tracking-tight text-[var(--color-foreground)]">
               Privacidade, segurança e dados
             </h1>
           </div>

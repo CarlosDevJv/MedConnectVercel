@@ -18,6 +18,7 @@ import { FieldError } from '@/components/ui/field-error'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 
 interface ForgotPasswordDialogProps {
   open: boolean
@@ -60,12 +61,13 @@ export function ForgotPasswordDialog({
     } catch (error) {
       if (error instanceof ApiError && error.fieldErrors?.email) {
         setError('email', { message: error.fieldErrors.email.join(', ') })
-      } else {
-        toast.error('Não foi possível enviar o email', {
-          description:
-            error instanceof Error ? error.message : 'Tente novamente em alguns instantes.',
-        })
+        return
       }
+      if (error instanceof ApiError) {
+        toastFromError(error, { operationTitle: 'Não foi possível enviar o email' })
+        return
+      }
+      toastFromError(error, {})
     }
   }
 

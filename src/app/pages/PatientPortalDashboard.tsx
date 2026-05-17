@@ -2,12 +2,15 @@ import { ArrowRight, Calendar, FileText } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/useAuth'
-import { useResolvedPatientId } from '@/features/patient-portal/hooks'
+import { usePatientPortalPatientResolution } from '@/features/patient-portal/access'
 
 export function PatientPortalDashboard() {
-  const { userInfo } = useAuth()
-  const patientId = useResolvedPatientId()
-  const fullName = userInfo?.profile?.full_name ?? userInfo?.user?.email ?? 'Paciente'
+  const { userInfo, userEnrichmentSynced } = useAuth()
+  const { resolvedId: patientId, pendingEmailLookup } = usePatientPortalPatientResolution()
+  const fullName =
+    (userInfo?.profile?.full_name ?? userInfo?.user?.email ?? 'Paciente').trim() || 'Paciente'
+  const showPatientLinkWarning =
+    Boolean(!patientId && userEnrichmentSynced && !pendingEmailLookup)
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
@@ -16,14 +19,14 @@ export function PatientPortalDashboard() {
           Portal do paciente
         </p>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-[var(--color-foreground)] mt-2 sm:text-4xl">
-          Olá, {fullName.split(' ')[0] || 'Paciente'}.
+          Olá, {fullName}.
         </h1>
         <p className="mt-2 text-[var(--color-muted-foreground)]">
           Aqui você acompanha os agendamentos e laudos vinculados ao seu cadastro.
         </p>
       </header>
 
-      {!patientId ? (
+      {showPatientLinkWarning ? (
         <aside className="rounded-[var(--radius-card)] border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm leading-relaxed text-amber-950">
           O app já tentou cruzar e‑mail ou CPF (metadados) com seu cadastro, mas não encontramos um paciente que
           possamos ler aqui ou o servidor bloqueia a consulta — peça à clínica para alinhar o e‑mail do cadastro

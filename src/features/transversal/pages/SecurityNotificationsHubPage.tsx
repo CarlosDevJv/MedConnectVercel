@@ -55,7 +55,7 @@ export function SecurityNotificationsHubPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-900/85">
             Seção 3 · transversal
           </p>
-          <h1 className="font-display text-[2.35rem] font-medium italic leading-tight tracking-tight text-[var(--color-foreground)]">
+          <h1 className="font-display text-[2.35rem] font-medium leading-tight tracking-tight text-[var(--color-foreground)]">
             Segurança &amp; canais de aviso
           </h1>
           <p className="text-sm leading-relaxed text-[var(--color-muted-foreground)]">
@@ -198,7 +198,7 @@ function ComingSoonPane({
   return (
     <div className="flex flex-col gap-5 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-10 shadow-[12px_12px_0_0_var(--color-muted)]">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border)] pb-4">
-        <h3 className="font-display text-xl italic text-[var(--color-foreground)]">{title}</h3>
+        <h3 className="font-display text-xl text-[var(--color-foreground)]">{title}</h3>
         <span className="rounded border border-[var(--color-border)] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
           aguardando API
         </span>

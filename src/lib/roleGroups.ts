@@ -3,6 +3,9 @@ import type { UserRole } from '@/types/user'
 /** Cadastro / edição / exclusão de pacientes (API Pacientes). */
 export const PATIENT_FORM_ROLES: UserRole[] = ['admin', 'gestor', 'secretaria', 'medico']
 
+/** Abrir formulário “Novo paciente” na UI — sem `medico` (cadastro inicial costuma ser da secretaria). */
+export const PATIENT_CREATE_ROLES: UserRole[] = ['admin', 'gestor', 'secretaria']
+
 /** Quem pode excluir paciente na UI — médicos e gestor ficam sem a ação (apenas admin/secretaria). */
 export const PATIENT_DELETE_ROLES: UserRole[] = ['admin', 'secretaria']
 

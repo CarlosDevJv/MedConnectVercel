@@ -111,24 +111,16 @@ export function LandingPricing() {
                 <span>Trilhas de compliance alinhadas ao seu jurídico</span>
               </li>
             </ul>
-            <span
-              className="mt-10 inline-flex h-12 w-full cursor-default select-none items-center justify-center rounded-[var(--radius-md)] border-2 border-[var(--color-accent-solid)] text-base font-semibold text-[var(--color-accent-solid)]"
-              aria-disabled="true"
+            <a
+              href="https://wa.me/557996774852"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Abrir conversa no WhatsApp com Consultor MediConnect"
+              className="mt-10 inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-[var(--radius-md)] border-2 border-[var(--color-accent-solid)] px-4 text-center text-base font-semibold text-[var(--color-accent-solid)] transition-colors hover:bg-[var(--color-accent-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-solid)]"
             >
               Entrar em contato
-            </span>
+            </a>
           </article>
-        </div>
-
-        <div className="mt-10 grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <span
-              className="inline-flex h-12 w-full cursor-default select-none items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] text-base font-semibold text-white"
-              aria-disabled="true"
-            >
-              Começar agora
-            </span>
-          </div>
         </div>
       </div>
     </section>

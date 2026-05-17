@@ -4,6 +4,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useDeleteDoctor } from '@/features/doctors/hooks'
 import type { Doctor } from '@/features/doctors/types'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 
 interface DeleteDoctorDialogProps {
   open: boolean
@@ -32,8 +33,8 @@ export function DeleteDoctorDialog({
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 403) {
-          toast.error('Sem permissão', {
-            description: 'Você não tem permissão para excluir este médico.',
+          toastFromError(error, {
+            permissionDescription: 'Você não tem permissão para excluir este médico.',
           })
           return
         }
@@ -46,21 +47,16 @@ export function DeleteDoctorDialog({
           return
         }
         if (error.status === 409) {
-          toast.error('Não foi possível excluir', {
-            description:
-              error.message ||
-              'Há registros relacionados (ex.: agendamentos) que impedem a exclusão.',
+          toastFromError(error, {
+            conflict: 'general',
+            operationTitle: 'Não foi possível excluir',
           })
           return
         }
-        toast.error('Erro ao excluir médico', {
-          description: error.message || 'Tente novamente.',
-        })
+        toastFromError(error, { operationTitle: 'Erro ao excluir médico' })
         return
       }
-      toast.error('Erro inesperado', {
-        description: error instanceof Error ? error.message : 'Tente novamente.',
-      })
+      toastFromError(error, {})
     }
   }
 

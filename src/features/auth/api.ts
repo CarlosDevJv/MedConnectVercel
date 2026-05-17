@@ -1,4 +1,5 @@
 import { getEnv } from '@/env'
+import { logoutSession } from '@/features/auth/logoutSession'
 import { ApiError, apiClient } from '@/lib/apiClient'
 import { getSupabase, setSessionPersistence } from '@/lib/supabase'
 import type { UserInfo } from '@/types/user'
@@ -17,8 +18,7 @@ export async function loginWithPassword({ email, password, remember = true }: Lo
 }
 
 export async function signOut() {
-  const { error } = await getSupabase().auth.signOut()
-  if (error) throw error
+  await logoutSession()
 }
 
 interface ResetPasswordResponse {

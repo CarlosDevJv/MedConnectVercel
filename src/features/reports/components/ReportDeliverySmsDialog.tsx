@@ -18,6 +18,8 @@ import { useSendSmsMutation } from '@/features/communications/hooks'
 import { toE164Preferred } from '@/features/communications/utils/phone'
 import { getPatient } from '@/features/patients/api'
 import type { EnrichedReport } from '@/features/reports/types'
+import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 import { cn } from '@/lib/cn'
 
 interface ReportDeliverySmsDialogProps {
@@ -47,9 +49,9 @@ export function ReportDeliverySmsDialog({ report, open, onOpenChange }: ReportDe
       try {
         const patient = await getPatient(r.patient_id)
         setPhoneRaw(patient.phone_mobile ?? '')
-      } catch {
+      } catch (e) {
         setPhoneRaw('')
-        toast.error('Não foi possível obter o telefone do paciente.')
+        toastFromError(e, { operationTitle: 'Não foi possível obter o telefone do paciente.' })
       } finally {
         setLoadingPatient(false)
       }
@@ -84,6 +86,10 @@ export function ReportDeliverySmsDialog({ report, open, onOpenChange }: ReportDe
         toast.error('SMS indisponível no servidor.', {
           description: 'O envio está desabilitado no servidor (503). Solicite revisão ao suporte técnico.',
         })
+        return
+      }
+      if (e instanceof ApiError) {
+        toastFromError(e, { operationTitle: 'Falha ao enviar SMS' })
         return
       }
       toast.error('Falha ao enviar SMS', { description: e instanceof Error ? e.message : 'Erro.' })

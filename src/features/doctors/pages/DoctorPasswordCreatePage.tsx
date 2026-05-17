@@ -11,6 +11,7 @@ import { useCreateDoctor } from '@/features/doctors/hooks'
 import type { CreateDoctorValues, CreateDoctorWithPasswordValues } from '@/features/doctors/schemas'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 
 export function DoctorPasswordCreatePage() {
   const navigate = useNavigate()
@@ -88,8 +89,8 @@ function handleDoctorCreatePasswordError(
 ) {
   if (error instanceof ApiError) {
     if (error.status === 403) {
-      toast.error('Sem permissão', {
-        description: 'Você não tem permissão para realizar essa ação.',
+      toastFromError(error, {
+        permissionDescription: 'Você não tem permissão para realizar essa ação.',
       })
       return
     }
@@ -107,7 +108,7 @@ function handleDoctorCreatePasswordError(
         formRef.current?.setFieldError('crm', error.message || 'CRM já cadastrado.')
         return
       }
-      toast.error('Cadastro duplicado', { description: error.message })
+      toastFromError(error, { conflict: 'registration' })
       return
     }
 
@@ -121,17 +122,13 @@ function handleDoctorCreatePasswordError(
         }
         return
       }
-      toast.error('Dados inválidos', { description: error.message })
+      toastFromError(error, {})
       return
     }
 
-    toast.error('Erro ao cadastrar médico', {
-      description: error.message || 'Tente novamente.',
-    })
+    toastFromError(error, { operationTitle: 'Erro ao cadastrar médico' })
     return
   }
 
-  toast.error('Erro inesperado', {
-    description: error instanceof Error ? error.message : 'Tente novamente.',
-  })
+  toastFromError(error, {})
 }

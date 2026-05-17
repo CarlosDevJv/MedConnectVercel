@@ -15,6 +15,7 @@ import type { ReportInput } from '@/features/reports/types'
 import { useCanManagePatients } from '@/features/auth/useAuth'
 import { usePatient } from '@/features/patients/hooks'
 import { cn } from '@/lib/cn'
+import { toastFromError } from '@/lib/apiErrorToast'
 
 function isoToDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -105,8 +106,8 @@ export function ReportEditorPage() {
       onSuccess: () => {
         toast.success('Laudo salvo.')
       },
-      onError: () => {
-        toast.error('Não foi possível salvar o laudo.')
+      onError: (err) => {
+        toastFromError(err, { operationTitle: 'Não foi possível salvar o laudo.' })
       },
     })
   }

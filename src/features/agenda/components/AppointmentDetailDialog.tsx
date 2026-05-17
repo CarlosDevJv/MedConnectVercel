@@ -43,6 +43,8 @@ import {
   formatPostgresLocalTimePtBr,
   formatTimePtBr,
 } from '@/lib/formatTimePtBr'
+import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 
 export interface AppointmentDetailDialogProps {
   appointment: EnrichedAppointment | null
@@ -154,7 +156,7 @@ export function AppointmentDetailDialog({
       patchLocal(row)
     } catch (e) {
       console.error(e)
-      toast.error('Não foi possível salvar.')
+      toastFromError(e, { operationTitle: 'Não foi possível salvar.' })
     }
   }
 
@@ -167,7 +169,7 @@ export function AppointmentDetailDialog({
       if (status === 'cancelled') onOpenChange(false)
     } catch (e) {
       console.error(e)
-      toast.error('Não foi possível atualizar o status.')
+      toastFromError(e, { operationTitle: 'Não foi possível atualizar o status.' })
     }
   }
 
@@ -183,7 +185,7 @@ export function AppointmentDetailDialog({
       patchLocal(row)
     } catch (e) {
       console.error(e)
-      toast.error('Não foi possível reagendar.')
+      toastFromError(e, { operationTitle: 'Não foi possível reagendar.' })
     }
   }
 
@@ -210,7 +212,7 @@ export function AppointmentDetailDialog({
       patchLocal(row)
     } catch (e) {
       console.error(e)
-      toast.error('Falha no reagendamento automático.')
+      toastFromError(e, { operationTitle: 'Falha no reagendamento automático.' })
     } finally {
       setAutoBusy(false)
     }
@@ -251,6 +253,10 @@ export function AppointmentDetailDialog({
         return
       }
       console.error(e)
+      if (e instanceof ApiError) {
+        toastFromError(e, { operationTitle: 'Falha ao enviar SMS.' })
+        return
+      }
       toast.error('Falha ao enviar SMS.')
     } finally {
       setSmsBusy(false)
@@ -265,7 +271,7 @@ export function AppointmentDetailDialog({
       onOpenChange(false)
     } catch (e) {
       console.error(e)
-      toast.error('Não foi possível cancelar.')
+      toastFromError(e, { operationTitle: 'Não foi possível cancelar.' })
     }
   }
 

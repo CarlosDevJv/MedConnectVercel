@@ -29,11 +29,15 @@ import {
 } from '@/features/agenda/utils/doctorAvailabilityOpenApi'
 import { pgWeekdayToUi } from '@/features/agenda/utils/doctorAvailabilityWeekday'
 import { ApiError } from '@/lib/apiClient'
+import { toastFromError } from '@/lib/apiErrorToast'
 import { formatPostgresLocalTimePtBr } from '@/lib/formatTimePtBr'
 
 function toastAvailabilityError(err: unknown, fallback: string) {
-  const detail = err instanceof ApiError ? err.message : null
-  toast.error(detail?.trim() ? detail : fallback)
+  if (err instanceof ApiError) {
+    toastFromError(err, { operationTitle: fallback })
+    return
+  }
+  toast.error(fallback)
 }
 
 const WEEKDAY_ROWS = [

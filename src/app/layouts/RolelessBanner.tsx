@@ -1,17 +1,15 @@
 import { RefreshCw, TriangleAlert } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { getSupabase } from '@/lib/supabase'
+import { logoutSession } from '@/features/auth/logoutSession'
 import { useIsRoleless } from '@/features/auth/useAuth'
 
 async function hardReconnect() {
   try {
-    await getSupabase().auth.signOut({ scope: 'local' })
+    await logoutSession()
   } catch {
-    // best-effort
+    // best-effort: garantir navegação mesmo se rede falhar após limpar storage
   }
-  localStorage.removeItem('mediconnect.auth')
-  sessionStorage.removeItem('mediconnect.auth')
   window.location.assign('/login')
 }
 

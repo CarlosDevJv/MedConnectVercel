@@ -9,11 +9,12 @@ import { PatientsTable } from '@/features/patients/components/PatientsTable'
 import { PatientsToolbar } from '@/features/patients/components/PatientsToolbar'
 import { useListPatients } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
-import { useCanDeletePatients, useCanManagePatients } from '@/features/auth/useAuth'
+import { useCanCreatePatients, useCanDeletePatients, useCanManagePatients } from '@/features/auth/useAuth'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
 export function PatientsListPage() {
   const canManage = useCanManagePatients()
+  const canCreate = useCanCreatePatients()
   const canDeletePatients = useCanDeletePatients()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -65,7 +66,7 @@ export function PatientsListPage() {
 
   // Backward-compat: /app/pacientes?new=1 still opens the create form
   React.useEffect(() => {
-    if (searchParams.get('new') === '1' && canManage) {
+    if (searchParams.get('new') === '1' && canCreate) {
       openCreate()
       setSearchParams({}, { replace: true })
     }
@@ -85,7 +86,9 @@ export function PatientsListPage() {
           <h1 className="font-display text-2xl text-[var(--color-foreground)]">Pacientes</h1>
         </div>
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Gerencie os pacientes cadastrados no sistema. Busque, edite ou crie novos registros.
+          {canCreate
+            ? 'Gerencie os pacientes cadastrados no sistema. Busque, edite ou crie novos registros.'
+            : 'Consulte pacientes já cadastrados. Novos registros ficam por conta da secretaria ou da gestão.'}
         </p>
       </header>
 
@@ -97,7 +100,7 @@ export function PatientsListPage() {
         total={total}
         loading={query.isLoading || query.isFetching}
         onCreate={openCreate}
-        canCreate={canManage}
+        canCreate={canCreate}
       />
 
       {query.isError ? (
@@ -105,7 +108,7 @@ export function PatientsListPage() {
       ) : !query.isLoading && items.length === 0 ? (
         <EmptyState
           query={debouncedSearch}
-          canCreate={canManage}
+          canCreate={canCreate}
           onCreate={openCreate}
           onClearSearch={() => setSearch('')}
         />
@@ -158,8 +161,10 @@ function EmptyState({ query, canCreate, onCreate, onClearSearch }: EmptyStatePro
         </h3>
         <p className="max-w-[420px] text-sm text-[var(--color-muted-foreground)]">
           {hasQuery
-            ? `Não encontramos resultados para "${query}". Verifique a busca ou cadastre um novo paciente.`
-            : 'Cadastre o primeiro paciente para começar a gerenciar a base.'}
+            ? `Não encontramos resultados para "${query}". Verifique a busca${canCreate ? ' ou cadastre um novo paciente' : ''}.`
+            : canCreate
+              ? 'Cadastre o primeiro paciente para começar a gerenciar a base.'
+              : 'Novos pacientes são cadastrados pela secretaria. Quando existirem registros, eles aparecem aqui.'}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">

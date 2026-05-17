@@ -6,9 +6,9 @@ import {
   Clock,
   ChevronRight,
   ClipboardList,
+  FilePlus,
   FileText,
   MessageSquare,
-  Plus,
   Search,
   Shield,
   Users,
@@ -292,7 +292,7 @@ export function DoctorDashboard() {
             <ModuleCard
               icon={Users}
               title="Pacientes"
-              description="Cadastro e edição conforme API de pacientes."
+              description="Lista, busca e atualização quando permitido (cadastro inicial costuma ficar na secretaria)."
               status="active"
               to="/app/pacientes"
             />
@@ -335,10 +335,10 @@ export function DoctorDashboard() {
           </header>
           <div className="flex flex-col gap-2">
             <QuickAction
-              icon={Plus}
-              label="Novo paciente"
-              description="Abre o formulário de cadastro"
-              to="/app/pacientes/novo"
+              icon={FilePlus}
+              label="Novo laudo"
+              description="Abre o relatório médico para preenchimento"
+              to="/app/relatorios/novo"
             />
             <QuickAction
               icon={Search}

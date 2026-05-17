@@ -1,4 +1,8 @@
 import { ApiError } from '@/lib/apiClient'
+import {
+  HTTP_ERROR_INTERNAL,
+  HTTP_ERROR_RATE_LIMIT,
+} from '@/lib/httpErrorMessages'
 
 /** Mensagens curtas para paciente: sem URLs, paths de API nem detalhes técnicos. */
 export function friendlyPortalLoadError(error: unknown): string {
@@ -7,8 +11,8 @@ export function friendlyPortalLoadError(error: unknown): string {
     if (status === 401) return 'Sessão expirada ou inválida.'
     if (status === 403) return 'Você não tem permissão para ver estes dados.'
     if (status === 404) return 'Dados não encontrados.'
-    if (status === 429) return 'Muitas tentativas. Aguarde e tente de novo.'
-    if (status >= 500 && status <= 599) return 'Serviço temporariamente indisponível. Tente mais tarde.'
+    if (status === 429) return HTTP_ERROR_RATE_LIMIT
+    if (status >= 500 && status <= 599) return HTTP_ERROR_INTERNAL
     if (status >= 400 && status <= 499) return 'Não foi possível concluir a solicitação.'
   }
   const errObj = typeof error === 'object' && error !== null ? (error as { message?: string; name?: string }) : {}

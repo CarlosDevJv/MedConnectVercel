@@ -1,9 +1,15 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Printer, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { sanitizeReportHtml } from '@/features/reports/utils/sanitizeHtml'
+import {
+  buildLaudoPreviewPrintBody,
+  printHtmlInNewWindow,
+} from '@/lib/printHtmlInNewWindow'
 import { cn } from '@/lib/cn'
+import { triggerBrowserPrint } from '@/lib/triggerBrowserPrint'
 
 export interface ReportPreviewDialogProps {
   open: boolean
@@ -23,7 +29,19 @@ export function ReportPreviewDialog({
   const safe = sanitizeReportHtml(html)
 
   function handlePrint() {
-    window.print()
+    const bodyInnerHtml = buildLaudoPreviewPrintBody({
+      title,
+      subtitle,
+      fragmentHtml: safe,
+    })
+    if (printHtmlInNewWindow({ title, bodyInnerHtml })) {
+      return
+    }
+    toast.warning('A impressão em janela separada falhou.', {
+      description:
+        'Abrimos o diálogo desta aba como alternativa. Se nada aparecer, use Ctrl+P (Cmd+P no Mac) com o pré-visualizador aberto.',
+    })
+    triggerBrowserPrint()
   }
 
   return (
