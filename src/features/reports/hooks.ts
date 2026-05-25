@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 
 import {
   createReport,
+  deleteReport,
   getReport,
   listReportsEnriched,
   updateReport,
@@ -51,6 +52,17 @@ export function useUpdateReportMutation(id: string) {
     onSuccess: (data) => {
       void qc.invalidateQueries({ queryKey: reportKeys.all })
       qc.setQueryData(reportKeys.detail(id), data)
+    },
+  })
+}
+
+export function useDeleteReportMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteReport(id),
+    onSuccess: (_data, id) => {
+      void qc.invalidateQueries({ queryKey: reportKeys.all })
+      qc.removeQueries({ queryKey: reportKeys.detail(id) })
     },
   })
 }

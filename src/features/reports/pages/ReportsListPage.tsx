@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table'
 import { ReportDeliverySmsDialog } from '@/features/reports/components/ReportDeliverySmsDialog'
 import { ReportPreviewDialog } from '@/features/reports/components/ReportPreviewDialog'
+import { DeleteReportDialog } from '@/features/reports/components/DeleteReportDialog'
 import { useReportsList } from '@/features/reports/hooks'
 import type { EnrichedReport, ReportStatus } from '@/features/reports/types'
 import { downloadReportsCsv } from '@/features/reports/utils/exportReportsCsv'
@@ -87,6 +88,7 @@ export function ReportsListPage() {
 
   const [preview, setPreview] = React.useState<EnrichedReport | null>(null)
   const [deliveryReport, setDeliveryReport] = React.useState<EnrichedReport | null>(null)
+  const [deleteTarget, setDeleteTarget] = React.useState<EnrichedReport | null>(null)
 
   const filteredPatientId = React.useMemo(
     () =>
@@ -362,10 +364,10 @@ export function ReportsListPage() {
                                       Protocolo de entrega (SMS)
                                     </DropdownMenu.Item>
                                     <DropdownMenu.Item
-                                      className="pointer-events-none rounded-[6px] px-3 py-2 text-sm text-[var(--color-muted-foreground)] opacity-50 outline-none"
-                                      disabled
+                                      className="cursor-pointer rounded-[6px] px-3 py-2 text-sm text-[var(--color-destructive)] outline-none hover:bg-red-50 focus:bg-red-50"
+                                      onSelect={() => setDeleteTarget(r)}
                                     >
-                                      Excluir (indisponível)
+                                      Excluir
                                     </DropdownMenu.Item>
                                   </DropdownMenu.Content>
                                 </DropdownMenu.Portal>
@@ -409,6 +411,13 @@ export function ReportsListPage() {
         open={!!deliveryReport}
         onOpenChange={(open) => {
           if (!open) setDeliveryReport(null)
+        }}
+      />
+      <DeleteReportDialog
+        report={deleteTarget}
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
         }}
       />
     </div>

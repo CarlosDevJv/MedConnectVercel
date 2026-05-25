@@ -120,7 +120,7 @@ function EditPatientPage() {
       const password = values.password?.trim() ?? ''
       const payload = buildUpdatePayload(values)
       const updated = await updateMutation.mutateAsync(payload)
-      if (password) {
+      if (password && !query.data?.user_id) {
         const phoneDigits = stripNonDigits(values.phone1 ?? '')
         await createUserWithPassword({
           email: updated.email.trim(),

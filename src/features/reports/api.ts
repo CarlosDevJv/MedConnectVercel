@@ -131,3 +131,18 @@ export async function listReportsEnriched(
     total,
   }
 }
+
+export async function deleteReport(id: string): Promise<void> {
+  const usp = new URLSearchParams({ id: `eq.${id}` })
+  const result = await apiClient.request<unknown[]>({
+    method: 'DELETE',
+    path: `/rest/v1/reports?${usp.toString()}`,
+    options: { headers: { Prefer: 'return=representation' } },
+  })
+  if (!result.data?.length) {
+    throw new ApiError({
+      message: 'Você não tem permissão para excluir este laudo.',
+      status: 403,
+    })
+  }
+}
