@@ -16,7 +16,7 @@ export function LandingNav() {
           <BrandWordmark size="md" />
         </Link>
 
-        <nav aria-label="Principal" className="hidden md:flex flex-1 items-center justify-center gap-10">
+        <nav aria-label="Principal" className="hidden md:flex ml-auto items-center gap-8">
           <a href="#plataforma" className={navLinkClass}>
             Plataforma
           </a>
@@ -29,7 +29,7 @@ export function LandingNav() {
         </nav>
 
         {status === 'authenticated' ? (
-          <div className="ml-auto flex shrink-0 items-center md:ml-6">
+          <div className="flex shrink-0 items-center md:ml-6">
             <Link
               to="/app"
               className="inline-flex h-10 shrink-0 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-accent-ink)] hover:bg-[var(--color-muted)]"

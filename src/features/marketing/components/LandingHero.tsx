@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { Play } from 'lucide-react'
 
 const HERO_BG_URL = `${import.meta.env.BASE_URL}landing-hero-medical-team.png`
 
@@ -60,9 +59,6 @@ export function LandingHero() {
                 href="#solucoes"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_92%,transparent)] px-8 text-base font-semibold text-[var(--color-accent-ink)] shadow-sm backdrop-blur-sm hover:bg-[var(--color-surface)]"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent-solid)]">
-                  <Play className="h-4 w-4 fill-current" aria-hidden />
-                </span>
                 Veja como funciona
               </a>
             </div>
