@@ -33,7 +33,9 @@ import { collectAvailableWeekdaysUnion } from '@/features/agenda/utils/doctorAva
 import {
   computeDaySlotsFromDoctorAvailability,
   enrichSlotsWithDoctorAvailabilityDuration,
+  appointmentBlocksSlotCandidate,
 } from '@/features/agenda/utils/computeDaySlotsFromAvailability'
+import { DOCTOR_AVAILABILITY_API_SLOT_DEFAULT } from '@/features/agenda/utils/doctorAvailabilityOpenApi'
 import { filterSelectableSlots } from '@/features/agenda/utils/normalizeAvailableSlots'
 
 export const agendaQueryKeys = {
@@ -315,8 +317,26 @@ export function useResolvedAppointmentFormSlots(opts: {
       usedFallback = true
     }
 
+    const existing = appointmentsDayQuery.data ?? []
+
+    let filteredItems = items
+    if (opts.dateISO && existing.length > 0) {
+      filteredItems = items.filter((slot) => {
+        const step = slot.duration_minutes ?? DOCTOR_AVAILABILITY_API_SLOT_DEFAULT
+        const blocked = existing.some((appt) =>
+          appointmentBlocksSlotCandidate({
+            dateISO: opts.dateISO!,
+            candidateTimeHHmm: slot.time,
+            newDurationMin: step,
+            appt,
+          })
+        )
+        return !blocked
+      })
+    }
+
     const slotItems = enrichSlotsWithDoctorAvailabilityDuration(
-      items,
+      filteredItems,
       opts.dateISO,
       opts.appointmentType,
       rows

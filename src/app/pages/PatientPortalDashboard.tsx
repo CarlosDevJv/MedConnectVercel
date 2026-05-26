@@ -44,7 +44,7 @@ export function PatientPortalDashboard() {
             <Calendar className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="font-display text-lg text-[var(--color-foreground)]">Meus agendamentos</h2>
+            <h2 className="font-display text-lg text-[var(--color-foreground)]">Atendimentos</h2>
             <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
               Datas, horários, profissional e status dos seus compromissos.
             </p>
@@ -62,7 +62,7 @@ export function PatientPortalDashboard() {
             <FileText className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="font-display text-lg text-[var(--color-foreground)]">Meus laudos</h2>
+            <h2 className="font-display text-lg text-[var(--color-foreground)]">Laudos</h2>
             <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
               Relatórios disponibilizados para você (somente leitura).
             </p>

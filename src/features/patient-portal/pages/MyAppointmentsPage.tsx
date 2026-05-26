@@ -67,7 +67,7 @@ export function MyAppointmentsPage() {
     return (
       <div className="mx-auto max-w-2xl">
         <header className="mb-6">
-          <h1 className="font-display text-2xl text-[var(--color-foreground)]">Meus agendamentos</h1>
+          <h1 className="font-display text-2xl text-[var(--color-foreground)]">Atendimentos</h1>
           <p className="mt-3 text-sm text-rose-600">
             Cadastro de paciente não encontrado para esta conta de acesso.
           </p>
@@ -82,7 +82,7 @@ export function MyAppointmentsPage() {
         <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
           <Calendar className="h-5 w-5" />
         </span>
-        <h1 className="font-display text-2xl text-[var(--color-foreground)]">Meus agendamentos</h1>
+        <h1 className="font-display text-2xl text-[var(--color-foreground)]">Atendimentos</h1>
       </header>
 
       {query.isLoading ? (

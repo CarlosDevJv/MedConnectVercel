@@ -3,6 +3,8 @@ import {
   BarChart3,
   Bell,
   Calendar,
+  CalendarCheck,
+  CalendarPlus,
   Clock,
   FileText,
   LayoutDashboard,
@@ -182,9 +184,16 @@ const NAV_ITEMS: NavItem[] = [
     roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
   },
   {
+    id: 'paciente-agendar',
+    icon: CalendarPlus,
+    label: 'Agendar',
+    to: '/app/agendar',
+    roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
+  },
+  {
     id: 'paciente-agendamentos',
     icon: Calendar,
-    label: 'Meus agendamentos',
+    label: 'Atendimentos',
     to: '/app/meus-agendamentos',
     /** Visibilidade real em `visibleItems`: `usePatientPortalRouteGate`; placeholder para satisfazer tipo. */
     roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
@@ -192,7 +201,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'paciente-laudos',
     icon: FileText,
-    label: 'Meus laudos',
+    label: 'Laudos',
     to: '/app/meus-laudos',
     roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
   },
@@ -230,6 +239,13 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Agenda',
     to: '/app/agenda',
     roles: [...AGENDA_ROLES],
+  },
+  {
+    id: 'confirmacoes',
+    icon: CalendarCheck,
+    label: 'Confirmação',
+    to: '/app/confirmacoes',
+    roles: ['admin', 'gestor', 'secretaria'],
   },
   {
     id: 'reports',
@@ -272,7 +288,7 @@ export function AppShell() {
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (!userInfo?.roles?.length) return item.id === 'dashboard'
-    if (item.id === 'paciente-agendamentos' || item.id === 'paciente-laudos') {
+    if (item.id === 'paciente-agendamentos' || item.id === 'paciente-laudos' || item.id === 'paciente-agendar') {
       return portalGate.allowed
     }
     return item.roles.some((r) => userInfo.roles.includes(r))
