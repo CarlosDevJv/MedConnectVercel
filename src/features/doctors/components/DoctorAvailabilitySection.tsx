@@ -95,7 +95,7 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
       console.error(err)
       toastAvailabilityError(
         err,
-        'Não foi possível salvar. Verifique horários únicos ou se o backend permite o perfil médico em doctor_availability (RLS no Supabase).'
+        'Não foi possível salvar. Verifique se o horário já não foi cadastrado ou se há permissões pendentes na conta.'
       )
     }
   }
@@ -133,14 +133,12 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
         Disponibilidade na agenda
       </div>
       <p className="mb-4 text-sm text-[var(--color-muted-foreground)]">
-        Use dia 0–6 (domingo a sábado), horários HH:MM e intervalo de slot entre{' '}
-        {DOCTOR_AVAILABILITY_API_SLOT_MIN}–{DOCTOR_AVAILABILITY_API_SLOT_MAX} min (padrão{' '}
-        {DOCTOR_AVAILABILITY_API_SLOT_DEFAULT}). Exceções ficam na agenda.
+        Defina os dias da semana, o horário de atendimento e o intervalo em minutos entre cada consulta (padrão de {DOCTOR_AVAILABILITY_API_SLOT_DEFAULT} min). Exceções específicas podem ser gerenciadas diretamente na agenda.
       </p>
 
       {listQuery.isError && (
         <p className="mb-3 text-sm text-amber-800">
-          Não foi possível carregar a disponibilidade (tabela `doctor_availability` ou permissões).
+          Não foi possível carregar as configurações de disponibilidade. Verifique suas permissões de acesso.
         </p>
       )}
 
@@ -183,7 +181,7 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
             }}
           />
           <p className="text-xs text-[var(--color-muted-foreground)]">
-            Permitido pela API: {DOCTOR_AVAILABILITY_API_SLOT_MIN} a {DOCTOR_AVAILABILITY_API_SLOT_MAX}.
+            Duração permitida: {DOCTOR_AVAILABILITY_API_SLOT_MIN} a {DOCTOR_AVAILABILITY_API_SLOT_MAX} minutos.
           </p>
         </div>
         <div className="space-y-1">

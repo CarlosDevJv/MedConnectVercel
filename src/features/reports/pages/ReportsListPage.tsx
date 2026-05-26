@@ -153,8 +153,7 @@ export function ReportsListPage() {
           </Button>
         </div>
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Filtros por <code className="text-xs">patient_id</code> e <code className="text-xs">created_by</code> quando
-          aplicáveis. A busca por texto refina os registros já carregados nesta página.
+          Filtragem e pesquisa de laudos médicos da clínica. A busca por texto refina os registros já carregados nesta página.
         </p>
       </header>
 
@@ -434,7 +433,7 @@ function ErrorState({ detail, onRetry }: { detail?: string | null; onRetry: () =
         Não conseguimos carregar os relatórios
       </h3>
       <div className="max-w-[520px] space-y-2 text-sm text-[var(--color-muted-foreground)]">
-        <p>Confira sessão e rede; se persistir, o detalhe abaixo costuma indicar a causa no Supabase/postgREST.</p>
+        <p>Confira sua conexão com a internet; se o problema persistir, entre em contato com o suporte técnico informando os detalhes abaixo.</p>
         {detail ? (
           <p className="rounded-md bg-red-50 px-3 py-2 text-left font-mono text-xs text-red-950 break-words">
             {detail}

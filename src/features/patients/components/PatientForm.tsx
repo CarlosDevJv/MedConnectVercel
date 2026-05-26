@@ -557,7 +557,7 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
               label="Observações"
               error={errors.notes?.message}
               className="md:col-span-2"
-              hint="Observações livres no cadastro do paciente (campo da API)."
+              hint="Observações adicionais para o cadastro do paciente."
             >
               <textarea
                 id="notes"
@@ -891,7 +891,7 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
           </div>
           <p className="mt-4 flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
             <Pill className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" aria-hidden />
-            Campos clínicos do cadastro de pacientes (API); mantenha atualizado com o paciente.
+            Campos clínicos do cadastro de pacientes; mantenha atualizado com o histórico de saúde do paciente.
           </p>
         </FormSection>
 
