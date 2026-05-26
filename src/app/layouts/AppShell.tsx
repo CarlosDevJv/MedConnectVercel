@@ -213,7 +213,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'minha-disponibilidade',
     icon: Clock,
-    label: 'Minha disponibilidade',
+    label: 'Disponibilidade',
     to: '/app/disponibilidade',
     roles: ['medico'],
   },

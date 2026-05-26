@@ -732,6 +732,7 @@ export function ReportEditorPage() {
     updateMutation.mutate(buildPayload(), {
       onSuccess: () => {
         toast.success('Laudo salvo.')
+        navigate('/app/relatorios')
       },
       onError: (err) => {
         toastFromError(err, { operationTitle: 'Não foi possível salvar o laudo.' })
