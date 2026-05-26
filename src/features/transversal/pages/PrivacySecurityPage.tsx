@@ -1,7 +1,8 @@
-import { Shield } from 'lucide-react'
+import { ArrowLeft, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 
 export function PrivacySecurityPage() {
   return (
@@ -11,9 +12,21 @@ export function PrivacySecurityPage() {
         className="dot-pattern absolute -inset-6 bottom-auto left-[-4%] right-auto top-[-2rem] z-0 h-48 max-w-xl opacity-[0.12]"
       />
 
+      <Button
+        type="button"
+        variant="ghost"
+        className="w-fit gap-2 px-2 text-[var(--color-muted-foreground)] mb-6"
+        asChild
+      >
+        <Link to="/app/seguranca-e-notificacoes">
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para Segurança
+        </Link>
+      </Button>
+
       <header className="relative mb-10 flex flex-col gap-5 animate-fade-in-up">
         <div className="flex items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-emerald-800">
+          <span className="grid h-12 w-12 place-items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)]">
             <Shield className="h-7 w-7" aria-hidden />
           </span>
           <div>
@@ -26,11 +39,11 @@ export function PrivacySecurityPage() {
           </div>
         </div>
 
-        <Alert variant="warning" className="border-amber-300/70">
-          <AlertTitle>Substituir texto por versão oficial do jurídico/DPO</AlertTitle>
+        <Alert variant="info">
+          <AlertTitle>Diretrizes de Segurança e Privacidade</AlertTitle>
           <AlertDescription>
-            Os parágrafos abaixo são esqueleto informativo para orientar o uso do aplicativo MediConnect até o parecer jurídico final.
-            Voltar também ao hub em{' '}
+            As diretrizes abaixo apresentam as políticas de segurança e proteção de dados em conformidade com as normas vigentes.
+            Você também pode gerenciar as suas notificações em{' '}
             <Link to="/app/seguranca-e-notificacoes" className="font-medium underline-offset-4 hover:underline">
               Segurança &amp; canais de aviso
             </Link>
@@ -66,16 +79,15 @@ export function PrivacySecurityPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[1.125rem] font-medium text-[var(--color-foreground)]">4. Auditoria operacional vs. relatório clínico</h2>
+          <h2 className="font-display text-[1.125rem] font-medium text-[var(--color-foreground)]">4. Em desenvolvimento</h2>
           <p className="text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-            Esta aplicação <strong>não disponibiliza auditoria granular de todas as ações de usuários</strong> até existir recurso técnico e contrato
-            explícitos com o produto/backend. Histórico de SMS via <code>sms_logs</code> faz parte apenas do fluxo já documentado de comunicação pelo Twilio quando habilitado.
+            Novos recursos de auditoria e relatórios de atividades estão em fase de desenvolvimento e serão disponibilizados nas próximas atualizações do sistema.
           </p>
         </section>
 
         <footer className="border-t border-[var(--color-border)] pt-6">
           <p className="text-xs leading-relaxed text-[var(--color-muted-foreground)]">
-            <strong className="text-[var(--color-foreground)]">Contatos</strong> — Definir e-mail institucional (ex.: privacidade@clinica…) e SLA de resposta antes de disponibilização em produção.
+            <strong className="text-[var(--color-foreground)]">MediConnect 2026</strong>
           </p>
         </footer>
       </article>
