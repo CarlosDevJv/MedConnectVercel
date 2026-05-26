@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table'
 import { ReportDeliverySmsDialog } from '@/features/reports/components/ReportDeliverySmsDialog'
 import { ReportPreviewDialog } from '@/features/reports/components/ReportPreviewDialog'
+import { DeleteReportDialog } from '@/features/reports/components/DeleteReportDialog'
 import { useReportsList } from '@/features/reports/hooks'
 import type { EnrichedReport, ReportStatus } from '@/features/reports/types'
 import { downloadReportsCsv } from '@/features/reports/utils/exportReportsCsv'
@@ -87,6 +88,7 @@ export function ReportsListPage() {
 
   const [preview, setPreview] = React.useState<EnrichedReport | null>(null)
   const [deliveryReport, setDeliveryReport] = React.useState<EnrichedReport | null>(null)
+  const [deleteTarget, setDeleteTarget] = React.useState<EnrichedReport | null>(null)
 
   const filteredPatientId = React.useMemo(
     () =>
@@ -151,8 +153,7 @@ export function ReportsListPage() {
           </Button>
         </div>
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Filtros por <code className="text-xs">patient_id</code> e <code className="text-xs">created_by</code> quando
-          aplicáveis. A busca por texto refina os registros já carregados nesta página.
+          Filtragem e pesquisa de laudos médicos da clínica. A busca por texto refina os registros já carregados nesta página.
         </p>
       </header>
 
@@ -362,10 +363,10 @@ export function ReportsListPage() {
                                       Protocolo de entrega (SMS)
                                     </DropdownMenu.Item>
                                     <DropdownMenu.Item
-                                      className="pointer-events-none rounded-[6px] px-3 py-2 text-sm text-[var(--color-muted-foreground)] opacity-50 outline-none"
-                                      disabled
+                                      className="cursor-pointer rounded-[6px] px-3 py-2 text-sm text-[var(--color-destructive)] outline-none hover:bg-red-50 focus:bg-red-50"
+                                      onSelect={() => setDeleteTarget(r)}
                                     >
-                                      Excluir (indisponível)
+                                      Excluir
                                     </DropdownMenu.Item>
                                   </DropdownMenu.Content>
                                 </DropdownMenu.Portal>
@@ -411,6 +412,13 @@ export function ReportsListPage() {
           if (!open) setDeliveryReport(null)
         }}
       />
+      <DeleteReportDialog
+        report={deleteTarget}
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      />
     </div>
   )
 }
@@ -425,7 +433,7 @@ function ErrorState({ detail, onRetry }: { detail?: string | null; onRetry: () =
         Não conseguimos carregar os relatórios
       </h3>
       <div className="max-w-[520px] space-y-2 text-sm text-[var(--color-muted-foreground)]">
-        <p>Confira sessão e rede; se persistir, o detalhe abaixo costuma indicar a causa no Supabase/postgREST.</p>
+        <p>Confira sua conexão com a internet; se o problema persistir, entre em contato com o suporte técnico informando os detalhes abaixo.</p>
         {detail ? (
           <p className="rounded-md bg-red-50 px-3 py-2 text-left font-mono text-xs text-red-950 break-words">
             {detail}

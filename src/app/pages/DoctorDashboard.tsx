@@ -168,7 +168,7 @@ export function DoctorDashboard() {
           icon={CalendarDays}
         />
         <StatCard
-          label="Laudos em aberto"
+          label="Laudos"
           value={
             draftsQuery.isLoading
               ? undefined
@@ -252,7 +252,7 @@ export function DoctorDashboard() {
         <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
           <h2 className="text-lg font-semibold text-[var(--color-foreground)]">Laudos</h2>
           <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-            Continue rascunhos e libere relatórios (API `/rest/v1/reports`).
+            Acompanhe o preenchimento, revise rascunhos e libere novos relatórios.
           </p>
           <div className="mt-6 flex min-h-[132px] flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-muted)_0%,transparent_55%)] px-4 py-8 text-center">
             <FileText className="h-8 w-8 text-[var(--color-accent)]/80" aria-hidden />
@@ -306,7 +306,7 @@ export function DoctorDashboard() {
             {!medicoSemVinculo ? (
               <ModuleCard
                 icon={Clock}
-                title="Minha disponibilidade"
+                title="Disponibilidade"
                 description="Faixas semanais para cálculo de horários livres."
                 status="active"
                 to="/app/disponibilidade"

@@ -316,7 +316,7 @@ export function AppointmentDetailDialog({
             <p className="font-mono text-xs">{patientPhone || '—'}</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="appt_type">Tipo de consulta</Label>
             <Select
               value={typeDraft}
@@ -337,7 +337,7 @@ export function AppointmentDetailDialog({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="appt_notes">Observações da consulta</Label>
             <textarea
               id="appt_notes"
@@ -399,7 +399,7 @@ export function AppointmentDetailDialog({
                 Reagendar
               </p>
               <div className="flex flex-col gap-3">
-                <div className="space-y-1">
+                <div className="flex flex-col gap-2">
                   <Label htmlFor="reschedule-date-picker">Nova data</Label>
                   <AppointmentAvailabilityDatePicker
                     doctorId={appointment?.doctor_id}
@@ -412,7 +412,7 @@ export function AppointmentDetailDialog({
                     }
                   />
                 </div>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-2">
                   <Label htmlFor="reschedule-time">Horário (24 h)</Label>
                   <Select
                     value={rescheduleTime}
@@ -443,10 +443,11 @@ export function AppointmentDetailDialog({
                   )}
                 </div>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-col gap-2">
                 <Button
                   type="button"
                   size="sm"
+                  className="w-full"
                   loading={updateMut.isPending}
                   onClick={() => void applyReschedule()}
                 >
@@ -456,12 +457,12 @@ export function AppointmentDetailDialog({
                   type="button"
                   size="sm"
                   variant="secondary"
-                  className="gap-1.5"
+                  className="w-full gap-1.5"
                   loading={autoBusy}
                   onClick={() => void applyAutoReschedule()}
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  Próximo horário livre (automático)
+                  Reagendar automaticamente
                 </Button>
               </div>
               <p className="text-[11px] text-[var(--color-muted-foreground)]">

@@ -98,10 +98,10 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor={embedded ? 'hub-sms-patient' : 'sms-patient'}>ID do paciente (opcional)</Label>
+        <Label htmlFor={embedded ? 'hub-sms-patient' : 'sms-patient'}>Código do paciente (opcional)</Label>
         <Input
           id={embedded ? 'hub-sms-patient' : 'sms-patient'}
-          placeholder="UUID do paciente (opcional)"
+          placeholder="Código do paciente (opcional)"
           value={patientId}
           onChange={(e) => setPatientId(e.target.value)}
         />
@@ -146,11 +146,11 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
   if (embedded) {
     return (
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3 border-l-[3px] border-emerald-600/90 pl-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-800/90">Canal disponível</p>
+        <div className="flex flex-col gap-3 border-l-[3px] border-[var(--color-accent)] pl-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">Canal disponível</p>
           <h3 className="font-display text-xl font-medium text-[var(--color-foreground)]">SMS (Twilio)</h3>
           <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-            Envio de mensagens pela integração configurada pelo MediConnect (<code className="text-xs">send-sms</code>).
+            Envio de mensagens pela integração configurada pelo MediConnect.
           </p>
         </div>
         {formBlock}

@@ -18,73 +18,8 @@ export function LandingPricing() {
           Planos que acompanham o crescimento da clínica: evolua módulos usuários ou SLA sempre que sua operação exigir.
         </p>
 
-        <div className="mt-14 grid gap-8 lg:grid-cols-3 lg:items-stretch">
-          <article className="flex flex-col rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-card)]">
-            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-muted-foreground)]">Básico</p>
-            <p className="mt-4 text-5xl font-bold tracking-tight text-[var(--color-accent-ink)]">
-              R$ 297<span className="text-2xl font-semibold text-[var(--color-muted-foreground)]"> /mês</span>
-            </p>
-            <p className="mt-4 text-[15px] text-[var(--color-muted-foreground)]">
-              Base sólida para agenda comunicação inicial cadastro pacientes relatórios operação diária primeira unidade.
-            </p>
-            <ul className="mt-10 flex flex-1 flex-col gap-3 text-sm text-[var(--color-muted-foreground)]">
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Agenda inteligente com confirmação integrada</span>
-              </li>
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Cadastro e histórico básicos de pacientes</span>
-              </li>
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Relatório operação essencial</span>
-              </li>
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Suporte por email</span>
-              </li>
-            </ul>
-          </article>
-
-          <article className="relative flex flex-col rounded-[var(--radius-md)] border-2 border-[var(--color-accent-solid)] bg-[var(--color-surface)] p-8 pt-10 shadow-[var(--shadow-elevated)] ring-[6px] ring-[var(--color-accent-soft)]/90">
-            <span className="absolute -top-4 left-1/2 inline-flex -translate-x-1/2 rounded-full bg-[var(--color-accent-solid)] px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
-              Mais popular
-            </span>
-            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-muted-foreground)]">
-              Profissional
-            </p>
-            <p className="mt-4 text-5xl font-bold tracking-tight text-[var(--color-accent-ink)]">
-              R$ 397<span className="text-2xl font-semibold text-[var(--color-muted-foreground)]"> /mês</span>
-            </p>
-            <p className="mt-4 text-[15px] text-[var(--color-muted-foreground)]">
-              Operações em ritmo forte com pacientes, agenda, SMS e relatórios clínicos integrados ao MediConnect.
-            </p>
-            <ul className="mt-10 flex flex-1 flex-col gap-3 text-sm text-[var(--color-muted-foreground)]">
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Tudo do plano Básico</span>
-              </li>
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Cadastro de pacientes e laudos (recursos documentados)</span>
-              </li>
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Relatórios clínicos e operacionais</span>
-              </li>
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>SMS transacional configurável</span>
-              </li>
-              <li className="flex gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
-                <span>Suporte estendido e armazenamento ampliado</span>
-              </li>
-            </ul>
-          </article>
-
-          <article className="flex flex-col rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-card)]">
+        <div className="mt-14 flex justify-center">
+          <article className="flex w-full max-w-md flex-col rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-card)]">
             <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-muted-foreground)]">Consultoria</p>
             <p className="mt-8 text-[2rem] font-bold leading-snug tracking-tight text-[var(--color-accent-ink)] sm:text-[2.35rem]">
               Fale com um consultor

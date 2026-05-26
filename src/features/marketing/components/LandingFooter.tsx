@@ -6,7 +6,7 @@ export function LandingFooter() {
   return (
     <footer id="sobre" className="scroll-mt-24 bg-[var(--color-footer-bg)] py-16 text-[var(--color-footer-muted)]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-4">
             <Link to="/" className="inline-block">
               <BrandWordmark size="md" className="!text-[var(--color-accent)]" />
@@ -55,18 +55,6 @@ export function LandingFooter() {
                 <Link to="/login" className="hover:text-[var(--color-surface)]">
                   Login corporativo
                 </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider opacity-70">Contato</p>
-            <ul className="mt-4 space-y-2 text-sm">
-              <li>
-                <span className="cursor-default select-none">Suporte</span>
-              </li>
-              <li>
-                <span className="cursor-default select-none">Vendas</span>
               </li>
             </ul>
           </div>

@@ -64,8 +64,8 @@ export function AnalyticsDashboardPage() {
           </p>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-display text-2xl text-[var(--color-foreground)]">Indicadores</h1>
-            <span className="rounded-full border border-emerald-300/80 bg-emerald-50/95 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-950">
-              Só agendamentos
+            <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)]/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)]">
+              Somente agendamentos
             </span>
           </div>
           <p className="text-sm text-[var(--color-muted-foreground)]">
@@ -103,7 +103,7 @@ export function AnalyticsDashboardPage() {
           loading={query.isLoading}
         />
         <StatCard
-          label="Taxa no-show"
+          label="Absenteísmo"
           value={
             query.isLoading
               ? undefined

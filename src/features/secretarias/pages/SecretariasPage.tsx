@@ -33,9 +33,8 @@ export function SecretariasPage() {
         <div className="flex-1 space-y-1">
           <p className="font-medium text-[var(--color-foreground)]">Listagem e edição em breve</p>
           <p>
-            A API ainda não expõe um endpoint público para listar usuários. Assim que ficar
-            disponível, a tabela com todas as secretárias e os controles de edição/desativação
-            aparecerão aqui.
+            A lista completa com todas as secretárias cadastradas e os controles de edição e desativação
+            de contas estarão disponíveis em breve nesta área.
           </p>
         </div>
       </aside>

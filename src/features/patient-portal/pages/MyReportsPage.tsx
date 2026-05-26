@@ -48,7 +48,7 @@ export function MyReportsPage() {
     return (
       <div className="mx-auto max-w-2xl">
         <header className="mb-6">
-          <h1 className="font-display text-2xl text-[var(--color-foreground)]">Meus laudos</h1>
+          <h1 className="font-display text-2xl text-[var(--color-foreground)]">Laudos</h1>
           <p className="mt-3 text-sm text-rose-600">
             Cadastro de paciente não encontrado para esta conta de acesso.
           </p>
@@ -63,7 +63,7 @@ export function MyReportsPage() {
         <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
           <FileText className="h-5 w-5" />
         </span>
-        <h1 className="font-display text-2xl text-[var(--color-foreground)]">Meus laudos</h1>
+        <h1 className="font-display text-2xl text-[var(--color-foreground)]">Laudos</h1>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">

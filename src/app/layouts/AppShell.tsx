@@ -3,6 +3,8 @@ import {
   BarChart3,
   Bell,
   Calendar,
+  CalendarCheck,
+  CalendarPlus,
   Clock,
   FileText,
   LayoutDashboard,
@@ -17,7 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import * as React from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useOptionalInAppNotifications } from '@/app/notifications/InAppNotificationsContext'
@@ -182,9 +184,16 @@ const NAV_ITEMS: NavItem[] = [
     roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
   },
   {
+    id: 'paciente-agendar',
+    icon: CalendarPlus,
+    label: 'Agendar',
+    to: '/app/agendar',
+    roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
+  },
+  {
     id: 'paciente-agendamentos',
     icon: Calendar,
-    label: 'Meus agendamentos',
+    label: 'Atendimentos',
     to: '/app/meus-agendamentos',
     /** Visibilidade real em `visibleItems`: `usePatientPortalRouteGate`; placeholder para satisfazer tipo. */
     roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
@@ -192,7 +201,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'paciente-laudos',
     icon: FileText,
-    label: 'Meus laudos',
+    label: 'Laudos',
     to: '/app/meus-laudos',
     roles: [...SIDEBAR_DASHBOARD_FALLBACK_ROLES],
   },
@@ -213,7 +222,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'minha-disponibilidade',
     icon: Clock,
-    label: 'Minha disponibilidade',
+    label: 'Disponibilidade',
     to: '/app/disponibilidade',
     roles: ['medico'],
   },
@@ -230,6 +239,13 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Agenda',
     to: '/app/agenda',
     roles: [...AGENDA_ROLES],
+  },
+  {
+    id: 'confirmacoes',
+    icon: CalendarCheck,
+    label: 'Confirmação',
+    to: '/app/confirmacoes',
+    roles: ['admin', 'gestor', 'secretaria'],
   },
   {
     id: 'reports',
@@ -272,7 +288,7 @@ export function AppShell() {
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (!userInfo?.roles?.length) return item.id === 'dashboard'
-    if (item.id === 'paciente-agendamentos' || item.id === 'paciente-laudos') {
+    if (item.id === 'paciente-agendamentos' || item.id === 'paciente-laudos' || item.id === 'paciente-agendar') {
       return portalGate.allowed
     }
     return item.roles.some((r) => userInfo.roles.includes(r))
@@ -328,24 +344,32 @@ export function AppShell() {
         <div
           className={cn(
             'flex min-h-16 shrink-0 items-center border-b border-[var(--color-border)] py-3',
-            expanded ? 'gap-3 px-4' : 'justify-center px-2'
+            expanded ? 'px-4' : 'justify-center px-2'
           )}
         >
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-            <MediConnectLogoMark
-              className="h-[22px] w-[22px]"
-              title={expanded ? undefined : 'MediConnect'}
-            />
-          </div>
-          {expanded && (
-            <div className="min-w-0 flex-1">
-              <BrandWordmark
-                variant="textOnly"
-                size="sm"
-                className="block truncate leading-tight"
+          <Link
+            to="/app"
+            className={cn(
+              'flex items-center focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 rounded-[var(--radius-sm)] outline-none transition-opacity hover:opacity-90',
+              expanded ? 'gap-3 w-full' : 'justify-center'
+            )}
+          >
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+              <MediConnectLogoMark
+                className="h-[22px] w-[22px]"
+                title={expanded ? undefined : 'MediConnect'}
               />
             </div>
-          )}
+            {expanded && (
+              <div className="min-w-0 flex-1 text-left">
+                <BrandWordmark
+                  variant="textOnly"
+                  size="sm"
+                  className="block truncate leading-tight"
+                />
+              </div>
+            )}
+          </Link>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-4">
@@ -452,7 +476,12 @@ export function AppShell() {
               <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
             </button>
 
-            <BrandWordmark size="sm" className="min-w-0 flex-1 truncate sm:hidden" />
+            <Link
+              to="/app"
+              className="min-w-0 flex-1 truncate sm:hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+            >
+              <BrandWordmark size="sm" className="w-full" />
+            </Link>
 
             <div className="hidden min-h-px flex-1 sm:block" />
 

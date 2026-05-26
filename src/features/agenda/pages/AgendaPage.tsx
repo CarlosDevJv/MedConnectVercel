@@ -129,6 +129,7 @@ export function AgendaPage() {
     return m
   }, [doctorsList])
 
+
   const visibleAppointments = React.useMemo(() => {
     let list = appointmentsQuery.data ?? []
     const q = search.trim().toLowerCase()
@@ -226,7 +227,7 @@ export function AgendaPage() {
         statusFilter={statusFilter}
         onStatusFilter={setStatusFilter}
         scheduleDisabled={medicoSemVinculo}
-        scheduleDisabledTitle="Associe seu cadastro de médico ao usuário (campo user_id em doctors ou doctor em user-info) para agendar."
+        scheduleDisabledTitle="Associe seu cadastro de médico ao usuário para realizar agendamentos."
         onScheduleIntent={(intent) => {
           if (medicoSemVinculo) return
           setScheduleIntent(intent)
@@ -255,10 +256,8 @@ export function AgendaPage() {
           )}
           {medicoSemVinculo && (
             <p className="rounded-md border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">
-              Não foi possível associar você a um médico nesta conta: falta{' '}
-              <code className="rounded bg-amber-100/90 px-1 text-xs">doctor.id</code> em user-info, campo{' '}
-              <code className="rounded bg-amber-100/90 px-1 text-xs">user_id</code> na tabela doctors ligado ao seu
-              login, ou a lista de médicos deve retornar apenas o seu perfil (RLS). Solicite ao administrador.
+              Não encontramos vínculo do seu usuário com um médico na base de dados. Entre em contato com{' '}
+              o administrador para concluir seu cadastro e liberar o acesso à agenda.
             </p>
           )}
           {showNoDoctor && !medicoSemVinculo && (
@@ -327,7 +326,17 @@ export function AgendaPage() {
         doctors={sheetDoctors}
         linkedDoctorId={resolvedDoctorId}
         defaultDate={toISODateString(anchorDate)}
-        onCompleted={() => void appointmentsQuery.refetch()}
+        onCompleted={(createdDoctorId) => {
+          if (createdDoctorId) {
+            setSelectionOverride((prev) => {
+              const base = prev ?? new Set(doctorsList.map((d) => d.id))
+              const next = new Set(base)
+              next.add(createdDoctorId)
+              return next
+            })
+          }
+          void appointmentsQuery.refetch()
+        }}
       />
 
       <AppointmentDetailDialog

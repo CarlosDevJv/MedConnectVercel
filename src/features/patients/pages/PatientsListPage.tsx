@@ -155,7 +155,7 @@ function EmptyState({ query, canCreate, onCreate, onClearSearch }: EmptyStatePro
       <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
         <Users className="h-5 w-5" />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-2">
         <h3 className="font-display text-lg text-[var(--color-foreground)]">
           {hasQuery ? 'Nenhum paciente encontrado' : 'Sem pacientes cadastrados'}
         </h3>
@@ -167,7 +167,7 @@ function EmptyState({ query, canCreate, onCreate, onClearSearch }: EmptyStatePro
               : 'Novos pacientes são cadastrados pela secretaria. Quando existirem registros, eles aparecem aqui.'}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {hasQuery && (
           <Button type="button" variant="outline" onClick={onClearSearch}>
             Limpar busca

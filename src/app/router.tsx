@@ -30,6 +30,8 @@ import { LandingPage } from '@/features/marketing/pages/LandingPage'
 import { MyAppointmentsPage } from '@/features/patient-portal/pages/MyAppointmentsPage'
 import { MyReportDetailPage } from '@/features/patient-portal/pages/MyReportDetailPage'
 import { MyReportsPage } from '@/features/patient-portal/pages/MyReportsPage'
+import { RequestAppointmentPage } from '@/features/patient-portal/pages/RequestAppointmentPage'
+import { ConfirmAppointmentsPage } from '@/features/agenda/pages/ConfirmAppointmentsPage'
 import {
   AGENDA_ROLES,
   ANALYTICS_ROLES,
@@ -134,6 +136,14 @@ const appChildren: RouteObject[] = [
     ),
   },
   {
+    path: 'agendar',
+    element: (
+      <RequirePatientPortal>
+        <RequestAppointmentPage />
+      </RequirePatientPortal>
+    ),
+  },
+  {
     path: 'meus-laudos',
     element: (
       <RequirePatientPortal>
@@ -154,6 +164,14 @@ const appChildren: RouteObject[] = [
     element: (
       <RequireRole roles={[...AGENDA_ROLES]}>
         <AgendaPage />
+      </RequireRole>
+    ),
+  },
+  {
+    path: 'confirmacoes',
+    element: (
+      <RequireRole roles={['admin', 'gestor', 'secretaria']}>
+        <ConfirmAppointmentsPage />
       </RequireRole>
     ),
   },

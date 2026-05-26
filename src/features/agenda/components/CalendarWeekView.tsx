@@ -14,21 +14,24 @@ import { cn } from '@/lib/cn'
 
 const ROW_PX = 22
 
-function statusClasses(status: AppointmentStatus): string {
-  switch (status) {
-    case 'confirmed':
-      return 'border-emerald-300/80 bg-emerald-100/85 text-emerald-950'
-    case 'requested':
-      return 'border-amber-300/80 bg-amber-50/95 text-amber-950'
-    case 'completed':
-      return 'border-slate-200 bg-slate-100/90 text-slate-800'
-    case 'cancelled':
-      return 'border-gray-200 bg-gray-100/80 text-gray-500 line-through opacity-75'
-    case 'no_show':
-      return 'border-rose-300/80 bg-rose-100/90 text-rose-950'
-    default:
-      return 'border-[var(--color-border)] bg-[var(--color-muted)]'
+const DOCTOR_COLORS = [
+  '#2563eb', // blue-600
+  '#7c3aed', // purple-600
+  '#db2777', // pink-600
+  '#0d9488', // teal-600
+  '#ea580c', // orange-600
+  '#4f46e5', // indigo-600
+  '#059669', // emerald-600
+  '#e11d48', // rose-600
+]
+
+function getDoctorColor(doctorId: string): string {
+  let hash = 0
+  for (let i = 0; i < doctorId.length; i++) {
+    hash = doctorId.charCodeAt(i) + ((hash << 5) - hash)
   }
+  const index = Math.abs(hash) % DOCTOR_COLORS.length
+  return DOCTOR_COLORS[index]
 }
 
 function statusDotClass(status: AppointmentStatus): string {
@@ -123,6 +126,73 @@ export function CalendarWeekView({
             availableWeekdays.size > 0
           const colMuted = filterOn && !availableWeekdays.has(day.getDay())
 
+          // Novo cálculo de colunas virtuais para agendamentos sobrepostos
+          const sortedAppts = [...columnAppts].sort((a, b) => {
+            return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+          })
+
+          const virtualCols: EnrichedAppointment[][] = []
+          const apptToColIndex = new Map<string, number>()
+
+          sortedAppts.forEach((appt) => {
+            const start = new Date(appt.scheduled_at).getTime()
+            const dur = appt.duration_minutes ?? 30
+            const end = start + dur * 60_000
+
+            let colIndex = 0
+            while (true) {
+              if (!virtualCols[colIndex]) {
+                virtualCols[colIndex] = []
+              }
+              const hasCollision = virtualCols[colIndex].some((other) => {
+                const otherStart = new Date(other.scheduled_at).getTime()
+                const otherDur = other.duration_minutes ?? 30
+                const otherEnd = otherStart + otherDur * 60_000
+                return start < otherEnd && end > otherStart
+              })
+              if (!hasCollision) {
+                virtualCols[colIndex].push(appt)
+                apptToColIndex.set(appt.id, colIndex)
+                break
+              }
+              colIndex++
+            }
+          })
+
+          const getApptLayout = (appt: EnrichedAppointment) => {
+            const colIndex = apptToColIndex.get(appt.id) ?? 0
+            const start = new Date(appt.scheduled_at).getTime()
+            const dur = appt.duration_minutes ?? 30
+            const end = start + dur * 60_000
+
+            const overlappingCols = new Set<number>()
+            overlappingCols.add(colIndex)
+
+            virtualCols.forEach((col, idx) => {
+              col.forEach((other) => {
+                if (other.id === appt.id) return
+                const otherStart = new Date(other.scheduled_at).getTime()
+                const otherDur = other.duration_minutes ?? 30
+                const otherEnd = otherStart + otherDur * 60_000
+                if (start < otherEnd && end > otherStart) {
+                  overlappingCols.add(idx)
+                }
+              })
+            })
+
+            const totalCols = overlappingCols.size
+            const sortedCols = Array.from(overlappingCols).sort((a, b) => a - b)
+            const relativeIdx = sortedCols.indexOf(colIndex)
+
+            const widthPct = 100 / totalCols
+            const leftPct = widthPct * relativeIdx
+
+            return {
+              left: `calc(${leftPct}% + 4px)`,
+              width: `calc(${widthPct}% - 8px)`,
+            }
+          }
+
           return (
             <div
               key={iso}
@@ -160,6 +230,9 @@ export function CalendarWeekView({
                   const docName = doctorNameById[a.doctor_id] ?? 'Profissional'
                   const end = new Date(start.getTime() + dur * 60_000)
                   const timeRange = `${formatTimePtBr(start)} – ${formatTimePtBr(end)}`
+                  const layout = getApptLayout(a)
+                  const docColor = getDoctorColor(a.doctor_id)
+                  const isCancelled = a.status === 'cancelled'
 
                   return (
                     <button
@@ -167,21 +240,32 @@ export function CalendarWeekView({
                       type="button"
                       onClick={() => onSelectAppointment?.(a)}
                       className={cn(
-                        'absolute left-1 right-1 flex flex-col gap-0.5 rounded-lg border px-1.5 py-1 text-left shadow-sm transition-transform hover:z-10 hover:scale-[1.02] hover:shadow-md',
-                        statusClasses(a.status)
+                        'absolute flex flex-col gap-0.5 rounded-lg border px-1.5 py-1 text-left shadow-sm transition-transform hover:z-10 hover:scale-[1.02] hover:shadow-md',
+                        isCancelled
+                          ? 'bg-slate-300 border-slate-400 text-slate-700 opacity-85'
+                          : 'bg-amber-100/95 border-amber-300 text-amber-950'
                       )}
-                      style={{ top, height: Math.max(h, ROW_PX * 1.5) }}
+                      style={{
+                        top,
+                        height: Math.max(h, ROW_PX * 1.5),
+                        left: layout.left,
+                        width: layout.width,
+                        borderLeftWidth: '4px',
+                        borderLeftColor: docColor
+                      }}
                     >
                       <div className="flex items-center gap-1.5 min-h-0">
                         <span
                           className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDotClass(a.status))}
                         />
-                        <span className="truncate text-[11px] font-semibold leading-tight">
+                        <span className={cn('truncate text-[11px] font-semibold leading-tight', isCancelled && 'line-through')}>
                           {a.patient_name}
                         </span>
                       </div>
                       <span className="truncate text-[10px] opacity-80">{timeRange}</span>
-                      <span className="truncate text-[10px] opacity-70">{docName}</span>
+                      <span className="truncate text-[10px] font-medium opacity-90" style={{ color: docColor }}>
+                        {docName}
+                      </span>
                     </button>
                   )
                 })}

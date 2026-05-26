@@ -42,7 +42,7 @@ function clampSlotMinutes(raw: number | null | undefined): number {
   )
 }
 
-function appointmentBlocksSlotCandidate(options: {
+export function appointmentBlocksSlotCandidate(options: {
   dateISO: string
   candidateTimeHHmm: string
   newDurationMin: number
