@@ -16,7 +16,6 @@ export function downloadReportsCsv(items: EnrichedReport[], filename = 'relatori
     'Exame',
     'Solicitante',
     'Criado em',
-    'Prazo',
   ] as const
   const lines = [
     headers.join(','),
@@ -28,7 +27,6 @@ export function downloadReportsCsv(items: EnrichedReport[], filename = 'relatori
         r.exam ?? '',
         r.requested_by ?? '',
         r.created_at ?? '',
-        r.due_at ?? '',
       ]
         .map((v) => escapeCsvCell(String(v)))
         .join(',')
