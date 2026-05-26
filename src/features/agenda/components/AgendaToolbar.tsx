@@ -69,12 +69,11 @@ export function AgendaToolbar({
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="flex h-10 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="rounded-r-none"
+            className="h-full rounded-r-none px-2"
             onClick={onPrev}
             aria-label="Período anterior"
           >
@@ -83,8 +82,7 @@ export function AgendaToolbar({
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="rounded-none border-x border-[var(--color-border)]"
+            className="h-full rounded-none border-x border-[var(--color-border)] px-2"
             onClick={onNext}
             aria-label="Próximo período"
           >
@@ -93,8 +91,7 @@ export function AgendaToolbar({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
-            className="rounded-l-none px-3 text-[13px] font-medium"
+            className="h-full rounded-l-none px-3 text-[13px] font-medium"
             onClick={onToday}
           >
             Hoje
@@ -105,14 +102,14 @@ export function AgendaToolbar({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-muted)]/30 p-1">
+      <div className="flex h-10 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-muted)]/30 p-1">
         {VIEWS.map((v) => (
           <button
             key={v.id}
             type="button"
             onClick={() => onViewMode(v.id)}
             className={cn(
-              'rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors',
+              'flex h-full items-center rounded-md px-3 text-[13px] font-medium transition-colors',
               viewMode === v.id
                 ? 'bg-[var(--color-surface)] text-[var(--color-accent)] shadow-sm'
                 : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
@@ -151,8 +148,7 @@ export function AgendaToolbar({
         <div className="relative" ref={wrapRef}>
           <Button
             type="button"
-            size="sm"
-            className="gap-1 pr-2"
+            className="h-10 gap-1 px-4"
             disabled={scheduleDisabled}
             title={scheduleDisabled ? scheduleDisabledTitle : undefined}
             onClick={() => {

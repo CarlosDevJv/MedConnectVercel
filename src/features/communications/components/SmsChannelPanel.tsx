@@ -98,10 +98,10 @@ export function SmsChannelPanel({ variant = 'standalone' }: SmsChannelPanelProps
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor={embedded ? 'hub-sms-patient' : 'sms-patient'}>ID do paciente (opcional)</Label>
+        <Label htmlFor={embedded ? 'hub-sms-patient' : 'sms-patient'}>Código do paciente (opcional)</Label>
         <Input
           id={embedded ? 'hub-sms-patient' : 'sms-patient'}
-          placeholder="UUID do paciente (opcional)"
+          placeholder="Código do paciente (opcional)"
           value={patientId}
           onChange={(e) => setPatientId(e.target.value)}
         />

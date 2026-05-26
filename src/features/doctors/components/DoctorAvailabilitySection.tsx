@@ -132,7 +132,7 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
         <Clock className="h-4 w-4" aria-hidden />
         Disponibilidade na agenda
       </div>
-      <p className="mb-4 text-sm text-[var(--color-muted-foreground)]">
+      <p className="mb-6 text-sm text-[var(--color-muted-foreground)]">
         Defina os dias da semana, o horário de atendimento e o intervalo em minutos entre cada consulta (padrão de {DOCTOR_AVAILABILITY_API_SLOT_DEFAULT} min). Exceções específicas podem ser gerenciadas diretamente na agenda.
       </p>
 
@@ -143,7 +143,7 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
       )}
 
       <form onSubmit={handleAdd} className="mb-6 grid gap-3 rounded-lg border border-dashed border-[var(--color-border)] p-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+        <div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
           <Label>Dia da semana</Label>
           <Select value={String(weekday)} onValueChange={(v) => setWeekday(Number(v))}>
             <SelectTrigger>
@@ -158,15 +158,15 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
+        <div className="flex flex-col gap-2">
           <Label htmlFor="avail-start-hour">Horário inicial (24 h)</Label>
           <TimeSelect24h id="avail-start" value={startTime} onChange={setStartTime} />
         </div>
-        <div className="space-y-1">
+        <div className="flex flex-col gap-2">
           <Label htmlFor="avail-end-hour">Horário final (24 h)</Label>
           <TimeSelect24h id="avail-end" value={endTime} onChange={setEndTime} />
         </div>
-        <div className="space-y-1">
+        <div className="flex flex-col gap-2">
           <Label>Slot (min)</Label>
           <Input
             type="number"
@@ -184,7 +184,7 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
             Duração permitida: {DOCTOR_AVAILABILITY_API_SLOT_MIN} a {DOCTOR_AVAILABILITY_API_SLOT_MAX} minutos.
           </p>
         </div>
-        <div className="space-y-1">
+        <div className="flex flex-col gap-2">
           <Label>Tipo</Label>
           <Select value={appType} onValueChange={(v) => setAppType(v as AppointmentType)}>
             <SelectTrigger>
@@ -196,11 +196,11 @@ export function DoctorAvailabilitySection({ doctorId }: DoctorAvailabilitySectio
             </SelectContent>
           </Select>
         </div>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-1">
+        <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-1 lg:pt-6">
           <Checkbox checked={activeNew} onCheckedChange={(v) => setActiveNew(v === true)} />
           Ativo
         </label>
-        <div className="flex items-end sm:col-span-2 lg:col-span-3">
+        <div className="flex items-end pt-2 sm:col-span-2 lg:col-span-3">
           <Button type="submit" size="sm" className="gap-1" loading={createMut.isPending}>
             <Plus className="h-3.5 w-3.5" />
             Adicionar faixa

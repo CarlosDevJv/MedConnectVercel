@@ -16,10 +16,10 @@ export function MyDoctorAvailabilityPage() {
           Início
         </Link>
         <span className="mx-1.5 opacity-50">/</span>
-        <span className="font-medium text-[var(--color-foreground)]">Minha disponibilidade</span>
+        <span className="font-medium text-[var(--color-foreground)]">Disponibilidade</span>
       </nav>
 
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-1 mb-2">
         <h1 className="font-display text-2xl text-[var(--color-foreground)]">
           Disponibilidade na agenda
         </h1>
@@ -41,9 +41,8 @@ export function MyDoctorAvailabilityPage() {
         </div>
       ) : medicoSemVinculo ? (
         <p className="rounded-md border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">
-          Não encontramos vínculo do seu usuário com um médico. Confirme{' '}
-          <code className="rounded bg-amber-100/90 px-1 text-xs">doctor.id</code> na sua sessão ou o campo{' '}
-          <code className="rounded bg-amber-100/90 px-1 text-xs">user_id</code> na tabela de médicos.{' '}
+          Não encontramos vínculo do seu usuário com um médico na base de dados. Entre em contato com{' '}
+          o administrador para concluir seu cadastro.{' '}
           <Link to="/app" className="font-medium underline-offset-2 hover:underline">
             Voltar ao início
           </Link>

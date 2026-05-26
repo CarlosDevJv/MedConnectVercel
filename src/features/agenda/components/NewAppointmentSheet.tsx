@@ -211,7 +211,7 @@ export function NewAppointmentSheet({
         </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-4 px-6 py-6">
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="doctor_id">Profissional</Label>
                 <Select
                   value={doctorId}
@@ -231,7 +231,7 @@ export function NewAppointmentSheet({
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="appt-date-hidden">Data</Label>
                 {blockAgenda ? (
                   <Input id="appt-date-hidden" type="date" lang="pt-BR" {...register('date', { required: true })} />
@@ -251,7 +251,7 @@ export function NewAppointmentSheet({
 
               {!blockAgenda && (
                 <>
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor="patient_search">Paciente</Label>
                     <Input
                       id="patient_search"
@@ -290,7 +290,7 @@ export function NewAppointmentSheet({
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor="appt-time">Horário (24 h)</Label>
                     <Select
                       value={timeVal}
@@ -333,7 +333,7 @@ export function NewAppointmentSheet({
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor="appt_notes_new">Observações</Label>
                     <textarea
                       id="appt_notes_new"
@@ -347,7 +347,7 @@ export function NewAppointmentSheet({
               )}
 
               {blockAgenda && (
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <Label htmlFor="blockReason">Motivo do bloqueio</Label>
                   <Input
                     id="blockReason"
