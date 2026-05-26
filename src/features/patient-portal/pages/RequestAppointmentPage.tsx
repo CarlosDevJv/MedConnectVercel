@@ -2,8 +2,6 @@ import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  Calendar,
-  Clock,
   Search,
   Stethoscope,
   User,
@@ -77,10 +75,6 @@ export function RequestAppointmentPage() {
     })
   }, [doctorsQuery.data, selectedSpecialty, doctorQuery])
 
-  // Médico selecionado (objeto completo)
-  const selectedDoctor = React.useMemo(() => {
-    return doctorsQuery.data?.items.find((d) => d.id === selectedDoctorId)
-  }, [doctorsQuery.data, selectedDoctorId])
 
   // Resolver slots disponíveis para o médico na data
   const { slotItems, slotsLoading, slotsError } = useResolvedAppointmentFormSlots({

@@ -13,7 +13,6 @@ import {
   CalendarDays,
   FileText,
   Search,
-  CheckCircle,
   Hash
 } from 'lucide-react'
 
@@ -169,7 +168,7 @@ export function ConfirmAppointmentsPage() {
 
       // 2. Disparar notificação (SMS/WhatsApp)
       const msg = `Olá, ${appt.patient_name}! Seu agendamento com o(a) Dr(a). ${appt.doctor_name} no dia ${formatDateTimePtBr(appt.scheduled_at)} foi CONFIRMADO com sucesso. Até lá!`
-      await sendNotification(appt, msg, 'confirmado')
+      await sendNotification(appt, msg)
 
       refetch()
     } catch (err) {
@@ -193,7 +192,7 @@ export function ConfirmAppointmentsPage() {
 
       // 2. Disparar notificação (SMS/WhatsApp)
       const msg = `Olá, ${appt.patient_name}! Infelizmente não pudemos confirmar sua solicitação de agendamento com o(a) Dr(a). ${appt.doctor_name} no dia ${formatDateTimePtBr(appt.scheduled_at)}. Por favor, entre em contato para escolher outro horário.`
-      await sendNotification(appt, msg, 'recusado')
+      await sendNotification(appt, msg)
 
       refetch()
     } catch (err) {
@@ -204,7 +203,7 @@ export function ConfirmAppointmentsPage() {
     }
   }
 
-  const sendNotification = async (appt: EnrichedRequestAppointment, message: string, type: 'confirmado' | 'recusado') => {
+  const sendNotification = async (appt: EnrichedRequestAppointment, message: string) => {
     const formattedPhone = appt.patient_phone?.trim()
     if (!formattedPhone || formattedPhone === '—') {
       toast.warning('O paciente não possui celular cadastrado. A mensagem não pôde ser enviada.')
