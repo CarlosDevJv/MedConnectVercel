@@ -103,7 +103,7 @@ export function AnalyticsDashboardPage() {
           loading={query.isLoading}
         />
         <StatCard
-          label="Taxa no-show"
+          label="Absenteísmo"
           value={
             query.isLoading
               ? undefined

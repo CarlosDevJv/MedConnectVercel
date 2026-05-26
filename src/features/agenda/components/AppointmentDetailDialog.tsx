@@ -316,7 +316,7 @@ export function AppointmentDetailDialog({
             <p className="font-mono text-xs">{patientPhone || '—'}</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="appt_type">Tipo de consulta</Label>
             <Select
               value={typeDraft}
@@ -337,7 +337,7 @@ export function AppointmentDetailDialog({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="appt_notes">Observações da consulta</Label>
             <textarea
               id="appt_notes"

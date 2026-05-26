@@ -129,6 +129,7 @@ export function AgendaPage() {
     return m
   }, [doctorsList])
 
+
   const visibleAppointments = React.useMemo(() => {
     let list = appointmentsQuery.data ?? []
     const q = search.trim().toLowerCase()
@@ -325,7 +326,17 @@ export function AgendaPage() {
         doctors={sheetDoctors}
         linkedDoctorId={resolvedDoctorId}
         defaultDate={toISODateString(anchorDate)}
-        onCompleted={() => void appointmentsQuery.refetch()}
+        onCompleted={(createdDoctorId) => {
+          if (createdDoctorId) {
+            setSelectionOverride((prev) => {
+              const base = prev ?? new Set(doctorsList.map((d) => d.id))
+              const next = new Set(base)
+              next.add(createdDoctorId)
+              return next
+            })
+          }
+          void appointmentsQuery.refetch()
+        }}
       />
 
       <AppointmentDetailDialog
