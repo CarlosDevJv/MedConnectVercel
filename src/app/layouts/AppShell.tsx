@@ -43,6 +43,7 @@ import {
 import { usePatientPortalRouteGate } from '@/features/patient-portal/access'
 import { AppointmentRemindersRunner } from '@/features/agenda/components/AppointmentRemindersRunner'
 import { cn } from '@/lib/cn'
+import { LuziaChat } from '@/features/luzia'
 
 const SIDEBAR_STORAGE_KEY = 'mediconnect.sidebar'
 
@@ -519,6 +520,7 @@ export function AppShell() {
         </main>
       </div>
 
+      <LuziaChat />
     </div>
   )
 }

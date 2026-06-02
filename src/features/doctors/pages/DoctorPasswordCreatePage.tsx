@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
 import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import {
@@ -15,6 +15,8 @@ import { toastFromError } from '@/lib/apiErrorToast'
 
 export function DoctorPasswordCreatePage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const prefillData = location.state?.prefill
   const formRef = React.useRef<DoctorFormHandle>(null)
   const createMutation = useCreateDoctor()
 
@@ -74,6 +76,7 @@ export function DoctorPasswordCreatePage() {
           ref={formRef}
           mode="create"
           withPassword
+          defaultValues={prefillData}
           onSubmit={handleSubmit}
           onCancel={() => navigate('/app/medicos')}
           submitting={createMutation.isPending}

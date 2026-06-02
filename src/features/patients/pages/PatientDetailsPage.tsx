@@ -40,6 +40,7 @@ import { useAuth, useCanDeletePatients, useCanManagePatients } from '@/features/
 import { REPORT_ROLES } from '@/lib/roleGroups'
 import { ApiError } from '@/lib/apiClient'
 import type { UserRole } from '@/types/user'
+import { useLuziaPageContext } from '@/features/luzia'
 
 export function PatientDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -63,6 +64,18 @@ export function PatientDetailsPage() {
 
   const patient = query.data
   if (!patient) return <NotFoundState />
+
+  // Compartilha dados do paciente atual com a assistente virtual Luzia
+  useLuziaPageContext({
+    tela: 'Ficha de Paciente',
+    paciente_id: patient.id,
+    nome_paciente: patient.full_name,
+    cpf: patient.cpf,
+    alergias: patient.allergies || 'Nenhuma alergia cadastrada',
+    convenio: patient.insurance_company || 'Particular',
+    tipo_sanguineo: patient.blood_type || 'Não informado',
+    observacoes: patient.notes || 'Nenhuma observação',
+  })
 
   const cityState =
     [patient.city, patient.state].filter(Boolean).join('/') || '—'
