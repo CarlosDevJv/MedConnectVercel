@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import * as React from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Skeleton } from '@/components/ui/skeleton'
@@ -36,6 +36,8 @@ export function PatientFormPage({ mode }: PatientFormPageProps) {
 
 function CreatePatientPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const prefillData = location.state?.prefill
   const formRef = React.useRef<PatientFormHandle>(null)
   const queryClient = useQueryClient()
 
@@ -99,6 +101,7 @@ function CreatePatientPage() {
       <PatientForm
         ref={formRef}
         mode="create"
+        defaultValues={prefillData}
         onSubmit={handleSubmit}
         onCancel={() => navigate('/app/pacientes')}
         submitting={createMutation.isPending}

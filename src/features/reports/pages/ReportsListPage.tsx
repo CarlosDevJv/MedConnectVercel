@@ -28,10 +28,10 @@ import { ReportDeliverySmsDialog } from '@/features/reports/components/ReportDel
 import { ReportPreviewDialog } from '@/features/reports/components/ReportPreviewDialog'
 import { DeleteReportDialog } from '@/features/reports/components/DeleteReportDialog'
 import { useReportsList } from '@/features/reports/hooks'
-import type { EnrichedReport, ReportStatus } from '@/features/reports/types'
+import type { EnrichedReport } from '@/features/reports/types'
 import { downloadReportsCsv } from '@/features/reports/utils/exportReportsCsv'
 import { buildReportFallbackHtml } from '@/features/reports/utils/reportPreviewFallbackHtml'
-import { formatDate, formatDateTime } from '@/features/patients/utils/format'
+import { formatDateTime } from '@/features/patients/utils/format'
 import { useAuth } from '@/features/auth/useAuth'
 import { usePatient } from '@/features/patients/hooks'
 import { ApiError } from '@/lib/apiClient'
@@ -43,12 +43,7 @@ function describeReportsListLoadError(err: unknown): string | null {
   return null
 }
 
-function isDueOverdue(dueAt: string | null, status: ReportStatus): boolean {
-  if (status !== 'draft' || !dueAt) return false
-  const t = new Date(dueAt).getTime()
-  if (Number.isNaN(t)) return false
-  return t < Date.now()
-}
+
 
 function uuidFromQuery(raw: string | null): string | undefined {
   const s = raw?.trim() ?? ''
@@ -248,7 +243,6 @@ export function ReportsListPage() {
                 <TableRow>
                   <TableHead>Protocolo</TableHead>
                   <TableHead className="hidden md:table-cell">Criado</TableHead>
-                  <TableHead>Prazo</TableHead>
                   <TableHead>Paciente</TableHead>
                   <TableHead className="hidden lg:table-cell">Solicitante</TableHead>
                   <TableHead className="hidden xl:table-cell">Exame</TableHead>
@@ -264,9 +258,6 @@ export function ReportsListPage() {
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <Skeleton className="h-3.5 w-28" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-3.5 w-20" />
                         </TableCell>
                         <TableCell>
                           <Skeleton className="h-3.5 w-36" />
@@ -301,17 +292,6 @@ export function ReportsListPage() {
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-[var(--color-muted-foreground)]">
                               {formatDateTime(r.created_at)}
-                            </TableCell>
-                            <TableCell>
-                              <span className="inline-flex items-center gap-1.5">
-                                {isDueOverdue(r.due_at, r.status) ? (
-                                  <span
-                                    className="h-2 w-2 shrink-0 rounded-full bg-[var(--color-destructive)]"
-                                    title="Prazo vencido"
-                                  />
-                                ) : null}
-                                <span className="text-sm">{formatDate(r.due_at)}</span>
-                              </span>
                             </TableCell>
                             <TableCell className="font-medium text-[var(--color-foreground)]">
                               {r.patient_name}

@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { InAppNotificationsProvider } from '@/app/notifications/InAppNotificationsContext'
 import { AuthProvider } from '@/features/auth/store'
+import { LuziaProvider } from '@/features/luzia'
 import { queryClient } from '@/lib/queryClient'
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -12,22 +13,24 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={150}>
         <AuthProvider>
-          <InAppNotificationsProvider>
-            {children}
-            <Toaster
-              position="top-right"
-              closeButton
-              theme="light"
-              toastOptions={{
-                classNames: {
-                  toast:
-                    'rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] shadow-md',
-                  title: 'font-medium',
-                  description: 'text-[var(--color-muted-foreground)]',
-                },
-              }}
-            />
-          </InAppNotificationsProvider>
+          <LuziaProvider>
+            <InAppNotificationsProvider>
+              {children}
+              <Toaster
+                position="top-right"
+                closeButton
+                theme="light"
+                toastOptions={{
+                  classNames: {
+                    toast:
+                      'rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] shadow-md',
+                    title: 'font-medium',
+                    description: 'text-[var(--color-muted-foreground)]',
+                  },
+                }}
+              />
+            </InAppNotificationsProvider>
+          </LuziaProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
