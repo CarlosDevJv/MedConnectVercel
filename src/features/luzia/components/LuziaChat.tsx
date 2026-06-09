@@ -1,10 +1,10 @@
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import {
   Send,
   Mic,
   MicOff,
-  X,
   Sparkles,
   ChevronDown,
 } from 'lucide-react'
@@ -39,10 +39,8 @@ export function LuziaChat() {
     messages,
     isLoading,
     isRecording,
-    apiKey,
     toggleChat,
     sendMessage,
-    saveApiKey,
     startSpeechToText,
     stopSpeechToText,
     registerNavigate,
@@ -52,9 +50,70 @@ export function LuziaChat() {
     registerNavigate(navigate)
   }, [navigate, registerNavigate])
 
+  const lastProcessedMessageId = React.useRef<string | null>(null)
+
+  React.useEffect(() => {
+    if (messages.length === 0) return
+    const lastMsg = messages[messages.length - 1]
+    if (
+      lastMsg.role === 'model' &&
+      lastMsg.action &&
+      lastMsg.id !== lastProcessedMessageId.current
+    ) {
+      lastProcessedMessageId.current = lastMsg.id
+      const { type, payload } = lastMsg.action
+
+      const payloadAny = payload as any
+      const targetUrl = payloadAny?.path || payloadAny?.route || payloadAny?.url || (typeof payload === 'string' ? payload : '')
+
+      toast.info(`Luzia Ação: ${type}`, {
+        description: `Destino: ${targetUrl || 'nenhum'}. Prefill: ${payload?.prefill ? 'sim' : 'não'}`
+      })
+
+      if (type === 'NAVIGATE') {
+        if (targetUrl) {
+          let fullUrl = targetUrl
+          if (payload?.queryParams) {
+            const params = new URLSearchParams(payload.queryParams)
+            fullUrl += `?${params.toString()}`
+          }
+          console.log('[LuziaChat] Navegando localmente para:', fullUrl, 'com prefill:', payload?.prefill)
+          try {
+            navigate(fullUrl, { state: { prefill: payload?.prefill } })
+          } catch (err: any) {
+            console.error('[LuziaChat] Erro na ação de navigate:', err)
+            toast.error('Erro de Navegação da Luzia', {
+              description: `Não foi possível navegar para ${targetUrl}. Detalhes: ${err?.message || err}`
+            })
+          }
+        } else {
+          console.warn('[LuziaChat] Ação NAVIGATE recebida, mas nenhum caminho de destino foi encontrado no payload:', payload)
+        }
+      } else if (type === 'SEARCH' && payload?.query) {
+        const target = payload.target === 'pacientes' ? '/app/pacientes' : '/app'
+        const searchQuery = payload.query || ''
+        const targetUrl = `${target}?busca=${encodeURIComponent(searchQuery)}`
+        console.log('[LuziaChat] Navegando localmente para busca:', targetUrl)
+        try {
+          navigate(targetUrl)
+        } catch (err: any) {
+          console.error('[LuziaChat] Erro na ação de busca:', err)
+          toast.error('Erro de Busca da Luzia', {
+            description: `Não foi possível buscar por ${payload.query}. Detalhes: ${err?.message || err}`
+          })
+        }
+      } else if (type === 'LOGOUT') {
+        console.log('[LuziaChat] Redirecionando para login localmente devido a logout')
+        try {
+          navigate('/login')
+        } catch (err: any) {
+          console.error('[LuziaChat] Erro ao redirecionar para login:', err)
+        }
+      }
+    }
+  }, [messages, navigate])
+
   const [inputValue, setInputValue] = React.useState('')
-  const [showConfig, setShowConfig] = React.useState(false)
-  const [tempKey, setTempKey] = React.useState(apiKey)
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
 
@@ -64,11 +123,6 @@ export function LuziaChat() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, isOpen, isLoading])
-
-  // Sincroniza a chave temporária
-  React.useEffect(() => {
-    setTempKey(apiKey)
-  }, [apiKey])
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -90,12 +144,6 @@ export function LuziaChat() {
         })
       })
     }
-  }
-
-  const handleSaveKey = (e: React.FormEvent) => {
-    e.preventDefault()
-    saveApiKey(tempKey)
-    setShowConfig(false)
   }
 
   return (
@@ -154,7 +202,7 @@ export function LuziaChat() {
             </div>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={toggleChat}
@@ -166,71 +214,8 @@ export function LuziaChat() {
           </div>
         </div>
 
-        {/* Corpo principal (Chat ou Configuração) */}
+        {/* Corpo principal (Chat) */}
         <div className="relative flex-1 overflow-hidden">
-          {/* Tela de Configurações da API Key */}
-          <div
-            className={cn(
-              'absolute inset-0 z-10 flex flex-col bg-white p-5 transition-transform duration-300 dark:bg-zinc-900',
-              showConfig || !apiKey ? 'translate-y-0' : '-translate-y-full'
-            )}
-          >
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
-              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Configuração da API Key</span>
-              {apiKey && (
-                <button
-                  type="button"
-                  onClick={() => setShowConfig(false)}
-                  className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            <form onSubmit={handleSaveKey} className="mt-4 flex flex-1 flex-col justify-between">
-              <div className="space-y-4">
-                <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  Para que a Luzia responda usando a inteligência do Gemini, insira sua chave da API da Google AI Studio abaixo. A chave será salva localmente de forma segura no seu navegador para testes.
-                </p>
-                <div className="space-y-1.5">
-                  <label htmlFor="api-key-input" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                    Gemini API Key
-                  </label>
-                  <input
-                    id="api-key-input"
-                    type="password"
-                    value={tempKey}
-                    onChange={(e) => setTempKey(e.target.value)}
-                    placeholder="Cole sua AI_KEY aqui..."
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-xs shadow-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                  />
-                </div>
-                <div className="rounded-lg bg-purple-50/50 p-2.5 border border-purple-100/30 text-[11px] text-purple-700 dark:bg-purple-950/20 dark:text-purple-300 leading-relaxed">
-                  <strong>💡 Dica:</strong> Se você configurar a variável <code>VITE_GEMINI_API_KEY</code> no seu arquivo <code>.env</code> do projeto, ela será lida automaticamente.
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                {apiKey && (
-                  <button
-                    type="button"
-                    onClick={() => setShowConfig(false)}
-                    className="flex-1 rounded-lg border border-zinc-300 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  >
-                    Cancelar
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={!tempKey.trim()}
-                  className="flex-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 py-2.5 text-xs font-medium text-white shadow hover:opacity-90 disabled:opacity-50"
-                >
-                  Salvar Chave
-                </button>
-              </div>
-            </form>
-          </div>
 
           {/* Área do Histórico de Conversas */}
           <div className="absolute inset-0 flex flex-col justify-between p-4 overflow-y-auto space-y-3.5 bg-zinc-50/30">

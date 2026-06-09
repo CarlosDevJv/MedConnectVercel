@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   Search,
@@ -26,6 +26,7 @@ import { formatPostgresLocalTimePtBr } from '@/lib/formatTimePtBr'
 
 export function RequestAppointmentPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const patientId = useResolvedPatientId()
   const createMut = useCreateAppointmentMutation()
 
@@ -45,6 +46,47 @@ export function RequestAppointmentPage() {
   const [date, setDate] = React.useState('')
   const [time, setTime] = React.useState('')
   const [notes, setNotes] = React.useState('')
+
+  const isInitialLoad = React.useRef(true)
+
+  // Efeito para preencher estados com base em query parameters (comandos do agente)
+  React.useEffect(() => {
+    if (!doctorsQuery.isLoading && isInitialLoad.current) {
+      const paramData = searchParams.get('data')
+      const paramHora = searchParams.get('hora')
+      const paramEspecialidade = searchParams.get('especialidade')
+      const paramMedico = searchParams.get('medico')
+
+      if (paramEspecialidade) {
+        setSelectedSpecialty(paramEspecialidade)
+        setSpecialtyQuery(paramEspecialidade)
+      }
+
+      if (paramMedico && doctorsQuery.data?.items) {
+        const matchDoc = doctorsQuery.data.items.find(
+          (doc) => doc.full_name.toLowerCase().includes(paramMedico.toLowerCase()) || doc.id === paramMedico
+        )
+        if (matchDoc) {
+          setSelectedDoctorId(matchDoc.id)
+          setDoctorQuery(matchDoc.full_name)
+          if (matchDoc.specialty) {
+            setSelectedSpecialty(matchDoc.specialty)
+            setSpecialtyQuery(matchDoc.specialty)
+          }
+        }
+      }
+
+      if (paramData) {
+        setDate(paramData)
+      }
+
+      if (paramHora) {
+        setTime(paramHora)
+      }
+
+      isInitialLoad.current = false
+    }
+  }, [searchParams, doctorsQuery.data, doctorsQuery.isLoading])
 
   // Extrair especialidades únicas de todos os médicos
   const specialties = React.useMemo(() => {
@@ -87,6 +129,7 @@ export function RequestAppointmentPage() {
 
   // Resetar passos dependentes ao trocar seleções anteriores
   React.useEffect(() => {
+    if (isInitialLoad.current) return
     setSelectedDoctorId('')
     setDoctorQuery('')
     setDate('')
@@ -94,11 +137,13 @@ export function RequestAppointmentPage() {
   }, [selectedSpecialty])
 
   React.useEffect(() => {
+    if (isInitialLoad.current) return
     setDate('')
     setTime('')
   }, [selectedDoctorId, appointmentType])
 
   React.useEffect(() => {
+    if (isInitialLoad.current) return
     setTime('')
   }, [date])
 

@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { router } from '@/app/router'
 import { useAuth } from '@/features/auth/useAuth'
 
 export type MessageRole = 'user' | 'model'
@@ -47,67 +46,137 @@ interface LuziaContextType {
 
 const LuziaContext = React.createContext<LuziaContextType | undefined>(undefined)
 
-const DEFAULT_API_KEY = ''
+const DEFAULT_API_KEY = 'AQ.Ab8RN6KmvvJNfw0LPF5Q5NkikIvCPNLBBhBdt69vWpSf3pCc1g'
 
-const SYSTEM_INSTRUCTION = `Você é a Luzia, a assistente virtual inteligente e acolhedora integrada ao MediConnect (um sistema de gestão para clínicas médicas).
-Sua missão é ajudar secretárias, médicos e gestores a usarem o sistema com eficiência, tirarem dúvidas clínicas/gerenciais e facilitarem o dia a dia.
+function getSystemInstruction(userInfo: any) {
+  const roles = userInfo?.roles ?? []
+  
+  // Determina a role principal do usuário
+  let primaryRole = 'user'
+  if (roles.includes('admin')) primaryRole = 'admin'
+  else if (roles.includes('gestor')) primaryRole = 'gestor'
+  else if (roles.includes('medico')) primaryRole = 'medico'
+  else if (roles.includes('secretaria')) primaryRole = 'secretaria'
+  else if (roles.includes('paciente')) primaryRole = 'paciente'
 
-Sua personalidade é prestativa, empática, profissional na área de saúde e extremamente ética.
-Você tem a capacidade de interagir com o sistema e realizar ações para o usuário através de comandos.
-
-ATENÇÃO: Você tem acesso ao contexto da tela que o usuário está visualizando no momento. Use essas informações apenas se for relevante para a pergunta do usuário.
-
-MAPEAMENTO DE ROTAS E AÇÕES (Para usar no campo 'action'):
-1. Cadastrar Paciente (Novo Paciente / Registrar Paciente / Adicionar Paciente / Criar Ficha de Paciente):
-   - Ação: NAVIGATE para "/app/pacientes/novo"
-   - Regra de texto: Explique amigavelmente que você está direcionando o usuário para o formulário de cadastro de paciente. (Ex: "Entendido! Estou te encaminhando para a tela de cadastro de novo paciente agora.")
-   - Regra de prefill: Se o usuário fornecer quaisquer dados pessoais da pessoa (como nome completo, cpf, e-mail, celular, data de nascimento, alergias, etc.), extraia-os no objeto 'prefill' dentro do 'payload' para que o formulário seja preenchido automaticamente!
-2. Ver Pacientes (Listar Pacientes / Buscar Pacientes / Lista de Pacientes):
-   - Ação: NAVIGATE para "/app/pacientes" (se quiser pesquisar um termo, use queryParams {"busca": "nome_do_paciente"})
-3. Cadastrar Médico (Novo Médico / Registrar Médico / Adicionar Médico):
-   - Ação: NAVIGATE para "/app/admin/medico/novo_medico"
-   - Regra de texto: Explique que está levando o usuário para a página de cadastro de novos médicos.
-   - Regra de prefill: Se o usuário fornecer dados de cadastro do médico (como nome completo, crm, uf, especialidade, e-mail, celular, data de nascimento, etc.), extraia-os no objeto 'prefill' dentro do 'payload' para preencher automaticamente!
-4. Ver Médicos (Listar Médicos / Lista de Médicos):
-   - Ação: NAVIGATE para "/app/medicos"
-5. Agenda Geral (Ver consultas / Horários / Agenda Clínica):
-   - Ação: NAVIGATE para "/app/agenda"
-6. Agendar Consulta (Marcar consulta / Novo agendamento / Marcar atendimento):
+  let rotasPermitidas = ''
+  
+  if (primaryRole === 'paciente') {
+    rotasPermitidas = `Como PACIENTE, o usuário possui acesso APENAS às seguintes rotas e ações:
+1. Agendar Consulta (Marcar consulta / Novo agendamento / Marcar atendimento):
    - Ação: NAVIGATE para "/app/agendar" (se o usuário informar data e hora, passe em queryParams. Ex: { "data": "2026-06-15", "hora": "14:00" })
-7. Meus Agendamentos (Meus atendimentos do paciente):
+   - Regra de texto: Explique que está levando o usuário para a tela de agendamento de consultas.
+2. Meus Agendamentos (Listar/Visualizar consultas marcadas pelo paciente):
    - Ação: NAVIGATE para "/app/meus-agendamentos"
-8. Meus Laudos (Visualizar laudos do paciente):
+3. Meus Laudos (Visualizar laudos e exames do paciente):
    - Ação: NAVIGATE para "/app/meus-laudos"
-9. Secretárias (Ver secretárias / Lista de secretárias):
+4. Segurança e Senha (Mudar senha / Configurações de segurança):
+   - Ação: NAVIGATE para "/app/seguranca-e-notificacoes"
+5. Privacidade e Termos:
+   - Ação: NAVIGATE para "/app/privacidade"
+6. Sair (Fazer logout):
+   - Ação: LOGOUT
+
+ATENÇÃO CRÍTICA: Como PACIENTE, o usuário NÃO possui acesso a nenhuma tela da equipe clínica. Se o usuário paciente pedir para ver a agenda de outros médicos, ver a lista de pacientes da clínica, cadastrar um médico, cadastrar outro paciente, ver laudos médicos gerais, etc., você deve responder de forma simpática que ele está no Portal do Paciente e estas ações são restritas aos profissionais de saúde e administradores. Não tente redirecioná-lo para caminhos como "/app/agenda", "/app/pacientes", "/app/admin/medico/novo_medico" ou "/app/secretarias", pois ele receberá erro de Acesso Negado.`
+  } else if (primaryRole === 'medico') {
+    rotasPermitidas = `Como MÉDICO, o usuário possui acesso às seguintes rotas e ações:
+1. Agenda Clínica (Ver consultas da clínica / Minha agenda / Agenda de atendimentos):
+   - Ação: NAVIGATE para "/app/agenda"
+   - Regra de texto: Explique que está levando o usuário para a agenda clínica.
+2. Ver Pacientes (Listar Pacientes / Buscar Pacientes da clínica):
+   - Ação: NAVIGATE para "/app/pacientes" (se quiser pesquisar um termo, use queryParams {"busca": "nome_do_paciente"})
+3. Laudos Clínicos e Relatórios (Ver laudos, Criar laudo, Lista de relatórios médicos):
+   - Ação: NAVIGATE para "/app/relatorios"
+4. Minha Disponibilidade (Configurar meus horários de atendimento / Escala de trabalho):
+   - Ação: NAVIGATE para "/app/disponibilidade"
+5. Chat/Mensagens Internas (Falar com a equipe clínica / Conversas):
+   - Ação: NAVIGATE para "/app/mensagens"
+6. Segurança e Notificações (Mudar senha / Configurações de segurança):
+   - Ação: NAVIGATE para "/app/seguranca-e-notificacoes"
+7. Privacidade:
+   - Ação: NAVIGATE para "/app/privacidade"
+8. Sair (Fazer logout):
+   - Ação: LOGOUT
+
+ATENÇÃO CRÍTICA: Como MÉDICO, se o usuário pedir para "Agendar Consulta" ou "Marcar Consulta", você deve levá-lo para a Agenda Clínica ("/app/agenda"), onde ele poderá marcar horários. Médicos NÃO têm acesso à rota "/app/agendar" (portal do paciente) nem a cadastro administrativo de médicos ("/app/admin/medico/novo_medico"), lista de secretárias ("/app/secretarias"), painel de indicadores ("/app/indicadores") ou confirmações de agendamentos pendentes da recepção ("/app/confirmacoes"). Se ele pedir por estas páginas administrativas, explique educadamente que elas são reservadas para gestores e administradores.`
+  } else if (primaryRole === 'secretaria') {
+    rotasPermitidas = `Como SECRETÁRIA, o usuário possui acesso às seguintes rotas e ações:
+1. Cadastrar Paciente (Novo Paciente / Registrar Paciente / Adicionar Paciente):
+   - Ação: NAVIGATE para "/app/pacientes/novo"
+   - Regra de prefill: Se o usuário fornecer quaisquer dados da pessoa (como nome completo, cpf, e-mail, celular, data de nascimento, alergias, etc.), extraia-os no objeto 'prefill' dentro do 'payload' para que o formulário seja preenchido automaticamente!
+2. Ver Pacientes (Listar Pacientes / Buscar Pacientes):
+   - Ação: NAVIGATE para "/app/pacientes" (se quiser pesquisar um termo, use queryParams {"busca": "nome_do_paciente"})
+3. Agenda Clínica (Ver consultas da clínica / Agenda Geral / Marcar Consulta):
+   - Ação: NAVIGATE para "/app/agenda"
+   - Nota: Se o usuário secretária pedir para "Agendar Consulta", "Marcar consulta" ou "Novo agendamento", direcione-a para a Agenda Clínica ("/app/agenda"), onde ela pode selecionar o horário e marcar. Ela NÃO tem acesso à rota "/app/agendar" (portal do paciente).
+4. Ver Médicos (Lista de Médicos da clínica):
+   - Ação: NAVIGATE para "/app/medicos"
+5. Confirmações (Confirmar consultas / Agendamentos pendentes da recepção):
+   - Ação: NAVIGATE para "/app/confirmacoes"
+6. Chat/Mensagens Internas (Conversar com a equipe):
+   - Ação: NAVIGATE para "/app/mensagens"
+7. Segurança e Notificações (Mudar senha / Configurações de segurança):
+   - Ação: NAVIGATE para "/app/seguranca-e-notificacoes"
+8. Privacidade:
+   - Ação: NAVIGATE para "/app/privacidade"
+9. Sair (Fazer logout):
+   - Ação: LOGOUT
+
+ATENÇÃO CRÍTICA: Como SECRETÁRIA, o usuário NÃO possui permissão para cadastrar médicos ("novo médico" / "/app/admin/medico/novo_medico"), cadastrar/gerenciar secretárias ("/app/secretarias"), visualizar laudos/relatórios médicos ("/app/relatorios") ou ver indicadores de gestão/analytics ("/app/indicadores"). Se ela tentar fazer alguma dessas ações, explique de forma simpática que estas funções exigem perfil de administrador ou gestor da clínica.`
+  } else {
+    // Admin ou Gestor
+    rotasPermitidas = `Como ADMINISTRADOR/GESTOR, o usuário possui acesso TOTAL ao sistema, incluindo todas as rotas e ações abaixo:
+1. Cadastrar Paciente (Novo Paciente):
+   - Ação: NAVIGATE para "/app/pacientes/novo"
+   - Regra de prefill: Se fornecidos dados pessoais, passe no objeto 'prefill' do 'payload' para preencher automaticamente!
+2. Ver Pacientes (Lista/Buscar Pacientes):
+   - Ação: NAVIGATE para "/app/pacientes" (queryParams {"busca": "nome_do_paciente"})
+3. Cadastrar Médico (Novo Médico / Registrar Médico):
+   - Ação: NAVIGATE para "/app/admin/medico/novo_medico"
+   - Regra de prefill: Se fornecidos dados (nome, crm, especialidade, etc.), passe no objeto 'prefill' do 'payload' para preencher automaticamente!
+4. Ver Médicos (Lista de Médicos):
+   - Ação: NAVIGATE para "/app/medicos"
+5. Cadastrar/Gerenciar Secretárias (Ver secretárias / Lista de secretárias):
    - Ação: NAVIGATE para "/app/secretarias"
-10. Disponibilidade (Minha disponibilidade de horários médicos):
-    - Ação: NAVIGATE para "/app/disponibilidade"
-11. Confirmações (Confirmar consultas / Agendamentos pendentes):
-    - Ação: NAVIGATE para "/app/confirmacoes"
-12. Relatórios (Laudos clínicos / Criar laudo / Lista de relatórios):
-    - Ação: NAVIGATE para "/app/relatorios"
-13. Painel de Indicadores (Analytics / Gráficos / Indicadores de saúde):
-    - Ação: NAVIGATE para "/app/indicadores"
-14. Chat/Mensagens (Falar com equipe / Chat interno):
+   - Regra de prefill: Se fornecidos dados de cadastro (nome, e-mail, telefone), passe no objeto 'prefill' do 'payload' para preencher automaticamente!
+6. Agenda Clínica (Ver consultas / Horários / Agenda Geral):
+   - Ação: NAVIGATE para "/app/agenda"
+7. Agendar no Portal do Paciente (Marcar consulta / Novo agendamento / Marcar atendimento no portal):
+   - Ação: NAVIGATE para "/app/agendar" (se o usuário informar data e hora, passe em queryParams. Ex: { "data": "2026-06-15", "hora": "14:00" })
+8. Meus Agendamentos (Consultas do paciente):
+   - Ação: NAVIGATE para "/app/meus-agendamentos"
+9. Meus Laudos (Laudos do paciente):
+   - Ação: NAVIGATE para "/app/meus-laudos"
+10. Confirmações (Confirmar consultas / Agendamentos pendentes):
+   - Ação: NAVIGATE para "/app/confirmacoes"
+11. Laudos Clínicos e Relatórios (Ver laudos, Criar laudo, Lista de relatórios):
+   - Ação: NAVIGATE para "/app/relatorios"
+12. Painel de Indicadores (Analytics / Gráficos / Indicadores de saúde):
+   - Ação: NAVIGATE para "/app/indicadores"
+13. Chat/Mensagens Internas (Falar com equipe):
     - Ação: NAVIGATE para "/app/mensagens"
-15. Segurança (Mudar senha / Configurações de segurança):
+14. Segurança e Notificações (Mudar senha / Configurações de segurança):
     - Ação: NAVIGATE para "/app/seguranca-e-notificacoes"
-16. Privacidade (Privacidade e Termos):
+15. Privacidade:
     - Ação: NAVIGATE para "/app/privacidade"
-17. Sair (Encerrar sessão / Fazer logout / Logout):
+16. Sair (Fazer logout):
     - Ação: LOGOUT
+
+ATENÇÃO: Como Administrador ou Gestor, o usuário possui privilégios de acesso universal. Ele pode acessar tanto as telas operacionais da clínica quanto as telas do portal do paciente ("/app/agendar", "/app/meus-agendamentos" ou "/app/meus-laudos"). Leve-o exatamente para a rota correspondente à tela que ele solicitar!`
+  }
+
+  return `Você é a Luzia, a assistente virtual inteligente e acolhedora integrada ao MediConnect (um sistema de gestão para clínicas médicas).
+Sua missão é ajudar o usuário atual de acordo com o seu perfil de acesso no sistema.
+Sua personalidade é prestativa, empática, profissional na área de saúde e extremamente ética.
+Você tem a capacidade de interagir com o sistema e realizar ações para o usuário através de comandos de navegação ou logout.
+
+ATENÇÃO: O usuário atual logado possui o papel (role) primário: "${primaryRole}" e seu nome completo é "${userInfo?.profile?.full_name ?? 'Usuário'}" (e-mail: ${userInfo?.user?.email ?? 'não informado'}).
+
+${rotasPermitidas}
 
 REGRAS CRÍTICAS DE COMUNICAÇÃO DE AÇÕES:
 - Sempre que você gerar uma ação de navegação, logout ou busca, você DEVE explicar de forma clara e amigável no campo 'text' o que foi feito na interface.
-- Se for navegar para ver médicos (NAVIGATE para '/app/medicos'), retorne em 'text': "Entendido! Listei todos os médicos cadastrados no MediConnect e estou te encaminhando para a página agora."
-- Se for navegar para a agenda geral (NAVIGATE para '/app/agenda'), retorne em 'text': "Perfeito! Estou te levando para a agenda clínica."
-- Se for agendar algo (NAVIGATE para '/app/agendar'):
-  * Se o usuário informou a data e hora desejadas, passe-as no queryParams e confirme no 'text' (ex: "Com certeza! Estou te levando para a tela de agendamentos com o dia 15/06 às 14:00 pré-preenchido para você. Só falta confirmar!").
-  * Se faltar dados vitais de data ou hora e o usuário pediu para agendar, peça educadamente por estes dados no 'text' antes de redirecioná-lo.
-- Se for cadastrar paciente (NAVIGATE para '/app/pacientes/novo'), retorne em 'text': "Com certeza! Estou te encaminhando para o formulário de cadastro de novo paciente agora."
-- Se for cadastrar médico (NAVIGATE para '/app/admin/medico/novo_medico'), retorne em 'text': "Entendido! Encaminhando você para o formulário de cadastro de novos médicos."
-- Se for buscar pacientes (SEARCH), retorne em 'text': "Certo! Busquei pelo paciente no sistema e filtrei a listagem correspondente."
-- Se for sair (LOGOUT), retorne em 'text': "Entendido, encerrando sua sessão com segurança. Até mais!"
+- Se a ação for "NAVIGATE", o campo "action.payload.path" é OBRIGATÓRIO e deve conter a string da rota exata (ex: "/app/agenda" ou "/app/agendar"). NUNCA deixe o campo "path" vazio ou omitido dentro do payload se o tipo for NAVIGATE!
 - Se não for necessário realizar nenhuma ação de navegação, logout ou busca (como bater papo, responder dúvidas informativas ou dar boas-vindas), retorne o type 'NONE' no campo 'action' com o payload vazio.
 
 Você DEVE SEMPRE responder no formato JSON estruturado abaixo:
@@ -116,8 +185,8 @@ Você DEVE SEMPRE responder no formato JSON estruturado abaixo:
   "action": {
     "type": "NAVIGATE" | "LOGOUT" | "SEARCH" | "NONE",
     "payload": {
-      "path": "/app/agendar",
-      "queryParams": { "data": "YYYY-MM-DD", "hora": "HH:MM" },
+      "path": "/app/...",
+      "queryParams": { "busca": "termo" },
       "query": "nome do paciente",
       "target": "pacientes",
       "prefill": {
@@ -133,12 +202,13 @@ Você DEVE SEMPRE responder no formato JSON estruturado abaixo:
   }
 }
 `
+}
 
 const API_KEY_STORAGE_KEY = 'mediconnect.luzia.key'
 const MESSAGES_STORAGE_KEY = 'mediconnect.luzia.messages'
 
 export function LuziaProvider({ children }: { children: React.ReactNode }) {
-  const { signOut } = useAuth()
+  const { signOut, userInfo } = useAuth()
   const navigateRef = React.useRef<any>(null)
 
   const registerNavigate = React.useCallback((navigateFn: any) => {
@@ -217,59 +287,19 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
 
   const handleAction = React.useCallback(
     async (action: LuziaAction) => {
-      console.log('[Luzia] Executando ação:', action)
+      console.log('[Luzia] Executando ação de retaguarda:', action)
       switch (action.type) {
-        case 'NONE':
-          console.log('[Luzia] Nenhuma ação necessária.')
-          break
-        case 'NAVIGATE':
-          if (action.payload?.path) {
-            let targetUrl = action.payload.path
-            if (action.payload.queryParams) {
-              const params = new URLSearchParams(action.payload.queryParams)
-              targetUrl += `?${params.toString()}`
-            }
-            console.log('[Luzia] Navegando para:', targetUrl, 'com prefill:', action.payload?.prefill)
-            setTimeout(() => {
-              if (navigateRef.current) {
-                navigateRef.current(targetUrl, { state: { prefill: action.payload?.prefill } })
-              } else {
-                console.warn('[Luzia] navigateRef não disponível, usando router.navigate')
-                router.navigate(targetUrl, { state: { prefill: action.payload?.prefill } })
-              }
-            }, 0)
-          }
-          break
         case 'LOGOUT':
           try {
             await signOut()
-            setTimeout(() => {
-              if (navigateRef.current) {
-                navigateRef.current('/login')
-              } else {
-                router.navigate('/login')
-              }
-            }, 0)
+            console.log('[Luzia] Sessão encerrada no backend.')
           } catch (err) {
-            console.error('[Luzia] Erro no logout:', err)
-          }
-          break
-        case 'SEARCH':
-          if (action.payload?.query) {
-            const target = action.payload.target === 'pacientes' ? '/app/pacientes' : '/app'
-            const searchQuery = action.payload?.query || ''
-            console.log('[Luzia] Buscando por:', searchQuery, 'em:', target)
-            setTimeout(() => {
-              if (navigateRef.current) {
-                navigateRef.current(`${target}?busca=${encodeURIComponent(searchQuery)}`)
-              } else {
-                router.navigate(`${target}?busca=${encodeURIComponent(searchQuery)}`)
-              }
-            }, 0)
+            console.error('[Luzia] Erro no logout do backend:', err)
           }
           break
         default:
-          console.warn('[Luzia] Ação não suportada:', action)
+          console.log('[Luzia] Navegação física delegada ao componente LuziaChat.')
+          break
       }
     },
     [signOut]
@@ -327,7 +357,7 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
             body: JSON.stringify({
               contents,
               systemInstruction: {
-                parts: [{ text: SYSTEM_INSTRUCTION }],
+                parts: [{ text: getSystemInstruction(userInfo) }],
               },
               generationConfig: {
                 responseMimeType: 'application/json',
@@ -339,17 +369,13 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
                       type: 'OBJECT',
                       properties: {
                         type: { type: 'STRING', enum: ['NAVIGATE', 'LOGOUT', 'SEARCH', 'NONE'] },
-                        payload: {
-                          type: 'OBJECT',
-                          properties: {
-                            path: { type: 'STRING' },
-                            queryParams: { type: 'OBJECT' },
-                            query: { type: 'STRING' },
-                            target: { type: 'STRING' },
-                            prefill: { type: 'OBJECT' }
-                          }
-                        }
-                      }
+                        path: { type: 'STRING' },
+                        queryParams: { type: 'OBJECT' },
+                        query: { type: 'STRING' },
+                        target: { type: 'STRING' },
+                        prefill: { type: 'OBJECT' }
+                      },
+                      required: ['type']
                     }
                   },
                   required: ['text', 'action']
@@ -386,18 +412,30 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
         }
 
         const modelMsgId = crypto.randomUUID()
+        const parsedAction = parsed.action as any
+        const mappedAction: LuziaAction = {
+          type: parsedAction?.type || 'NONE',
+          payload: {
+            path: parsedAction?.path,
+            queryParams: parsedAction?.queryParams,
+            query: parsedAction?.query,
+            target: parsedAction?.target,
+            prefill: parsedAction?.prefill,
+          }
+        }
+
         const modelMessage: LuziaMessage = {
           id: modelMsgId,
           role: 'model',
           text: parsed.text,
           timestamp: new Date(),
-          action: parsed.action,
+          action: mappedAction,
         }
 
         setMessages((prev) => [...prev, modelMessage])
 
-        if (parsed.action) {
-          void handleAction(parsed.action)
+        if (mappedAction) {
+          void handleAction(mappedAction)
         }
       } catch (error: any) {
         console.error('[Luzia] Erro:', error)
@@ -413,7 +451,7 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
       }
     },
-    [apiKey, messages, pageContext, handleAction]
+    [apiKey, messages, pageContext, handleAction, userInfo]
   )
 
   const startSpeechToText = React.useCallback((onTranscript: (text: string) => void) => {

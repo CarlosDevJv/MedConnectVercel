@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { IdCard, KeyRound, Mail, Phone, User } from 'lucide-react'
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form'
@@ -30,7 +31,11 @@ function mapApiValidationField(apiKey: string): keyof CreateSecretariaUserWithPa
   return allowed[k] ?? null
 }
 
-export function CreateUserWithPasswordForm() {
+interface CreateUserWithPasswordFormProps {
+  defaultValues?: Partial<CreateSecretariaUserWithPasswordValues>
+}
+
+export function CreateUserWithPasswordForm({ defaultValues }: CreateUserWithPasswordFormProps = {}) {
   const mutation = useCreateUserWithPassword()
 
   const {
@@ -43,13 +48,25 @@ export function CreateUserWithPasswordForm() {
   } = useForm<CreateSecretariaUserWithPasswordValues>({
     resolver: zodResolver(createSecretariaUserWithPasswordSchema),
     defaultValues: {
-      full_name: '',
-      email: '',
-      password: '',
-      cpf: '',
-      phone: '',
+      full_name: defaultValues?.full_name ?? '',
+      email: defaultValues?.email ?? '',
+      password: defaultValues?.password ?? '',
+      cpf: defaultValues?.cpf ?? '',
+      phone: defaultValues?.phone ?? '',
     },
   })
+
+  React.useEffect(() => {
+    if (defaultValues) {
+      reset({
+        full_name: defaultValues.full_name ?? '',
+        email: defaultValues.email ?? '',
+        password: defaultValues.password ?? '',
+        cpf: defaultValues.cpf ?? '',
+        phone: defaultValues.phone ?? '',
+      })
+    }
+  }, [defaultValues, reset])
 
   const submit: SubmitHandler<CreateSecretariaUserWithPasswordValues> = async (values) => {
     try {

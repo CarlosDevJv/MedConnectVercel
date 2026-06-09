@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, Loader2, FileCheck, Paperclip, Trash2 } from 'lucide-react'
+import { ArrowLeft, Eye, Loader2, FileCheck, Paperclip, Trash2, Mic } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -128,6 +128,93 @@ export function ReportEditorPage() {
 
   const reportQuery = useReport(id)
   const report = reportQuery.data
+
+  const [activeVoiceField, setActiveVoiceField] = React.useState<string | null>(null)
+  const recognitionRef = React.useRef<any>(null)
+
+  const toggleVoiceInput = React.useCallback((fieldId: string, valueSetter: React.Dispatch<React.SetStateAction<string>>) => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    if (!SpeechRecognition) {
+      toast.error('Reconhecimento de voz não suportado pelo seu navegador atual. Use o Google Chrome ou Edge.')
+      return
+    }
+
+    if (activeVoiceField === fieldId) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch {}
+      }
+      setActiveVoiceField(null)
+      return
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch {}
+    }
+
+    try {
+      const rec = new SpeechRecognition()
+      rec.lang = 'pt-BR'
+      rec.continuous = true
+      rec.interimResults = false
+
+      rec.onstart = () => {
+        setActiveVoiceField(fieldId)
+        toast.info('Gravação de voz iniciada. Pode falar...')
+      }
+
+      rec.onerror = (e: any) => {
+        console.error('[Speech Laudo] Erro:', e)
+        if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+          toast.error('Acesso ao microfone negado pelo navegador.')
+        } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          toast.error(`Erro no microfone: ${e.error}`)
+        }
+        setActiveVoiceField(null)
+      }
+
+      rec.onend = () => {
+        setActiveVoiceField(null)
+      }
+
+      rec.onresult = (event: any) => {
+        let finalTranscript = ''
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript
+          }
+        }
+        if (finalTranscript) {
+          valueSetter((prev) => {
+            const space = prev.trim() ? ' ' : ''
+            return prev + space + finalTranscript
+          })
+        }
+      }
+
+      recognitionRef.current = rec
+      rec.start()
+    } catch (err: any) {
+      console.error('[Speech Laudo] Falha ao iniciar:', err)
+      toast.error('Não foi possível iniciar o serviço de voz.')
+      setActiveVoiceField(null)
+    }
+  }, [activeVoiceField])
+
+  React.useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch {}
+      }
+    }
+  }, [])
   const patientQuery = usePatient(report?.patient_id)
 
   const updateMutation = useUpdateReportMutation(id ?? '')
@@ -948,9 +1035,24 @@ export function ReportEditorPage() {
           />
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2 border-t border-[var(--color-border)] pt-4 mt-2">
-          <Label htmlFor="queixa" className="text-sm font-semibold text-[var(--color-foreground)]">
-            Queixa Principal (Motivo da Consulta)
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="queixa" className="text-sm font-semibold text-[var(--color-foreground)]">
+              Queixa Principal (Motivo da Consulta)
+            </Label>
+            <button
+              type="button"
+              onClick={() => toggleVoiceInput('queixa', setQueixa)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                activeVoiceField === 'queixa'
+                  ? "bg-red-500 text-white border-red-500 animate-pulse"
+                  : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
+              )}
+            >
+              <Mic className="h-3.5 w-3.5" />
+              {activeVoiceField === 'queixa' ? 'Gravando...' : 'Gravar por Voz'}
+            </button>
+          </div>
           <textarea
             id="queixa"
             value={queixa}
@@ -965,9 +1067,24 @@ export function ReportEditorPage() {
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label htmlFor="hda" className="text-sm font-semibold text-[var(--color-foreground)]">
-            Histórico da Doença Atual (HDA)
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="hda" className="text-sm font-semibold text-[var(--color-foreground)]">
+              Histórico da Doença Atual (HDA)
+            </Label>
+            <button
+              type="button"
+              onClick={() => toggleVoiceInput('hda', setHda)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                activeVoiceField === 'hda'
+                  ? "bg-red-500 text-white border-red-500 animate-pulse"
+                  : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
+              )}
+            >
+              <Mic className="h-3.5 w-3.5" />
+              {activeVoiceField === 'hda' ? 'Gravando...' : 'Gravar por Voz'}
+            </button>
+          </div>
           <textarea
             id="hda"
             value={hda}
@@ -986,14 +1103,29 @@ export function ReportEditorPage() {
             <Label htmlFor="exame_fisico" className="text-sm font-semibold text-[var(--color-foreground)]">
               Exame Físico (Se houver)
             </Label>
-            <button
-              type="button"
-              onClick={() => efFileInputRef.current?.click()}
-              className="flex items-center gap-1.5 text-xs text-[var(--color-accent)] hover:underline font-medium"
-            >
-              <Paperclip className="h-3.5 w-3.5" />
-              Anexar Imagem
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => toggleVoiceInput('exame_fisico', setExameFisico)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                  activeVoiceField === 'exame_fisico'
+                    ? "bg-red-500 text-white border-red-500 animate-pulse"
+                    : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
+                )}
+              >
+                <Mic className="h-3.5 w-3.5" />
+                {activeVoiceField === 'exame_fisico' ? 'Gravando...' : 'Gravar por Voz'}
+              </button>
+              <button
+                type="button"
+                onClick={() => efFileInputRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs text-[var(--color-accent)] hover:underline font-medium"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Anexar Imagem
+              </button>
+            </div>
             <input
               type="file"
               ref={efFileInputRef}
@@ -1051,14 +1183,29 @@ export function ReportEditorPage() {
             <Label htmlFor="exames_comp" className="text-sm font-semibold text-[var(--color-foreground)]">
               Exames Complementares (Se houver)
             </Label>
-            <button
-              type="button"
-              onClick={() => ecFileInputRef.current?.click()}
-              className="flex items-center gap-1.5 text-xs text-[var(--color-accent)] hover:underline font-medium"
-            >
-              <Paperclip className="h-3.5 w-3.5" />
-              Anexar Imagem
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => toggleVoiceInput('exames_comp', setExamesComp)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                  activeVoiceField === 'exames_comp'
+                    ? "bg-red-500 text-white border-red-500 animate-pulse"
+                    : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
+                )}
+              >
+                <Mic className="h-3.5 w-3.5" />
+                {activeVoiceField === 'exames_comp' ? 'Gravando...' : 'Gravar por Voz'}
+              </button>
+              <button
+                type="button"
+                onClick={() => ecFileInputRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs text-[var(--color-accent)] hover:underline font-medium"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Anexar Imagem
+              </button>
+            </div>
             <input
               type="file"
               ref={ecFileInputRef}
@@ -1112,9 +1259,24 @@ export function ReportEditorPage() {
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2 border-t border-[var(--color-border)] pt-4 mt-2">
-          <Label htmlFor="conclusion" className="text-sm font-semibold text-[var(--color-foreground)]">
-            Hipótese Diagnóstica / Conclusão
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="conclusion" className="text-sm font-semibold text-[var(--color-foreground)]">
+              Hipótese Diagnóstica / Conclusão
+            </Label>
+            <button
+              type="button"
+              onClick={() => toggleVoiceInput('conclusion', setConclusionText)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                activeVoiceField === 'conclusion'
+                  ? "bg-red-500 text-white border-red-500 animate-pulse"
+                  : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
+              )}
+            >
+              <Mic className="h-3.5 w-3.5" />
+              {activeVoiceField === 'conclusion' ? 'Gravando...' : 'Gravar por Voz'}
+            </button>
+          </div>
           <textarea
             id="conclusion"
             value={conclusionText}
@@ -1129,9 +1291,24 @@ export function ReportEditorPage() {
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label htmlFor="conduta" className="text-sm font-semibold text-[var(--color-foreground)]">
-            Conduta Médica / Tratamento Indicado
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="conduta" className="text-sm font-semibold text-[var(--color-foreground)]">
+              Conduta Médica / Tratamento Indicado
+            </Label>
+            <button
+              type="button"
+              onClick={() => toggleVoiceInput('conduta', setConduta)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                activeVoiceField === 'conduta'
+                  ? "bg-red-500 text-white border-red-500 animate-pulse"
+                  : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
+              )}
+            >
+              <Mic className="h-3.5 w-3.5" />
+              {activeVoiceField === 'conduta' ? 'Gravando...' : 'Gravar por Voz'}
+            </button>
+          </div>
           <textarea
             id="conduta"
             value={conduta}
