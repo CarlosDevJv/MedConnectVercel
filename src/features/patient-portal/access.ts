@@ -156,7 +156,8 @@ export function usePatientPortalRouteGate(): {
   const staff = isClinicalStaffRole(roles)
   const { resolvedId } = usePatientPortalPatientResolution()
 
-  const allowed = !staff
+  const isGestorOrAdmin = roles.includes('gestor') || roles.includes('admin')
+  const allowed = !staff || isGestorOrAdmin
   const pending = false
 
   return { allowed, pending, resolvedPatientId: resolvedId }

@@ -1,8 +1,12 @@
 import { Clock, Info, KeyRound } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 
 import { CreateUserWithPasswordForm } from '@/features/users/components/CreateUserWithPasswordForm'
 
 export function SecretariasPage() {
+  const location = useLocation()
+  const prefillData = location.state?.prefill
+
   return (
     <div className="mx-auto flex max-w-[960px] flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -25,7 +29,7 @@ export function SecretariasPage() {
           </h2>
         </div>
 
-        <CreateUserWithPasswordForm />
+        <CreateUserWithPasswordForm defaultValues={prefillData} />
       </section>
 
       <aside className="flex items-start gap-3 rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-muted)]/30 p-5 text-sm text-[var(--color-muted-foreground)]">
