@@ -46,7 +46,7 @@ interface LuziaContextType {
 
 const LuziaContext = React.createContext<LuziaContextType | undefined>(undefined)
 
-const DEFAULT_API_KEY = 'AQ.Ab8RN6KmvvJNfw0LPF5Q5NkikIvCPNLBBhBdt69vWpSf3pCc1g'
+const DEFAULT_API_KEY = ''
 
 function getSystemInstruction(userInfo: any) {
   const roles = userInfo?.roles ?? []
