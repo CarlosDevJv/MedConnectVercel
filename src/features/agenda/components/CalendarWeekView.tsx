@@ -126,17 +126,59 @@ export function CalendarWeekView({
             availableWeekdays.size > 0
           const colMuted = filterOn && !availableWeekdays.has(day.getDay())
 
-          // Novo cálculo de colunas virtuais para agendamentos sobrepostos
-          const sortedAppts = [...columnAppts].sort((a, b) => {
-            return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
-          })
+          // Interface para os itens de layout (individual ou agrupado)
+          interface LayoutItem {
+            id: string
+            scheduled_at: string
+            duration_minutes: number
+            appointments: EnrichedAppointment[]
+            isGroup: boolean
+          }
 
-          const virtualCols: EnrichedAppointment[][] = []
-          const apptToColIndex = new Map<string, number>()
+          // Agrupar por horário exato
+          const apptsByTime = React.useMemo(() => {
+            const groups: Record<string, EnrichedAppointment[]> = {}
+            columnAppts.forEach((a) => {
+              const key = a.scheduled_at
+              if (!groups[key]) groups[key] = []
+              groups[key].push(a)
+            })
+            return groups
+          }, [columnAppts])
 
-          sortedAppts.forEach((appt) => {
-            const start = new Date(appt.scheduled_at).getTime()
-            const dur = appt.duration_minutes ?? 30
+          const layoutItems = React.useMemo(() => {
+            const items: LayoutItem[] = []
+            Object.entries(apptsByTime).forEach(([timeKey, list]) => {
+              if (list.length > 3) {
+                const maxDuration = Math.max(...list.map((a) => a.duration_minutes ?? 30))
+                items.push({
+                  id: `group-${timeKey}`,
+                  scheduled_at: timeKey,
+                  duration_minutes: maxDuration,
+                  appointments: list,
+                  isGroup: true,
+                })
+              } else {
+                list.forEach((appt) => {
+                  items.push({
+                    id: appt.id,
+                    scheduled_at: appt.scheduled_at,
+                    duration_minutes: appt.duration_minutes ?? 30,
+                    appointments: [appt],
+                    isGroup: false,
+                  })
+                })
+              }
+            })
+            return items.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+          }, [apptsByTime])
+
+          const virtualCols: LayoutItem[][] = []
+          const itemToColIndex = new Map<string, number>()
+
+          layoutItems.forEach((item) => {
+            const start = new Date(item.scheduled_at).getTime()
+            const dur = item.duration_minutes
             const end = start + dur * 60_000
 
             let colIndex = 0
@@ -146,23 +188,23 @@ export function CalendarWeekView({
               }
               const hasCollision = virtualCols[colIndex].some((other) => {
                 const otherStart = new Date(other.scheduled_at).getTime()
-                const otherDur = other.duration_minutes ?? 30
+                const otherDur = other.duration_minutes
                 const otherEnd = otherStart + otherDur * 60_000
                 return start < otherEnd && end > otherStart
               })
               if (!hasCollision) {
-                virtualCols[colIndex].push(appt)
-                apptToColIndex.set(appt.id, colIndex)
+                virtualCols[colIndex].push(item)
+                itemToColIndex.set(item.id, colIndex)
                 break
               }
               colIndex++
             }
           })
 
-          const getApptLayout = (appt: EnrichedAppointment) => {
-            const colIndex = apptToColIndex.get(appt.id) ?? 0
-            const start = new Date(appt.scheduled_at).getTime()
-            const dur = appt.duration_minutes ?? 30
+          const getItemLayout = (item: LayoutItem) => {
+            const colIndex = itemToColIndex.get(item.id) ?? 0
+            const start = new Date(item.scheduled_at).getTime()
+            const dur = item.duration_minutes
             const end = start + dur * 60_000
 
             const overlappingCols = new Set<number>()
@@ -170,9 +212,9 @@ export function CalendarWeekView({
 
             virtualCols.forEach((col, idx) => {
               col.forEach((other) => {
-                if (other.id === appt.id) return
+                if (other.id === item.id) return
                 const otherStart = new Date(other.scheduled_at).getTime()
-                const otherDur = other.duration_minutes ?? 30
+                const otherDur = other.duration_minutes
                 const otherEnd = otherStart + otherDur * 60_000
                 if (start < otherEnd && end > otherStart) {
                   overlappingCols.add(idx)
@@ -219,55 +261,109 @@ export function CalendarWeekView({
                   />
                 ))}
 
-                {columnAppts.map((a) => {
-                  const start = new Date(a.scheduled_at)
+                {layoutItems.map((item) => {
+                  const start = new Date(item.scheduled_at)
                   const mins = minutesSinceMidnight(start)
                   const rel = mins - startMin
                   if (rel < 0 || rel >= endMin - startMin) return null
-                  const dur = a.duration_minutes ?? 30
+                  const dur = item.duration_minutes
                   const top = (rel / GRID_SLOT_MINUTES) * ROW_PX
                   const h = (dur / GRID_SLOT_MINUTES) * ROW_PX
-                  const docName = doctorNameById[a.doctor_id] ?? 'Profissional'
                   const end = new Date(start.getTime() + dur * 60_000)
                   const timeRange = `${formatTimePtBr(start)} – ${formatTimePtBr(end)}`
-                  const layout = getApptLayout(a)
-                  const docColor = getDoctorColor(a.doctor_id)
-                  const isCancelled = a.status === 'cancelled'
+                  const layout = getItemLayout(item)
 
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => onSelectAppointment?.(a)}
-                      className={cn(
-                        'absolute flex flex-col gap-0.5 rounded-lg border px-1.5 py-1 text-left shadow-sm transition-transform hover:z-10 hover:scale-[1.02] hover:shadow-md',
-                        isCancelled
-                          ? 'bg-slate-300 border-slate-400 text-slate-700 opacity-85'
-                          : 'bg-amber-100/95 border-amber-300 text-amber-950'
-                      )}
-                      style={{
-                        top,
-                        height: Math.max(h, ROW_PX * 1.5),
-                        left: layout.left,
-                        width: layout.width,
-                        borderLeftWidth: '4px',
-                        borderLeftColor: docColor
-                      }}
-                    >
-                      <div className="flex items-center gap-1.5 min-h-0">
-                        <span
-                          className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDotClass(a.status))}
-                        />
-                        <span className={cn('truncate text-[11px] font-semibold leading-tight', isCancelled && 'line-through')}>
-                          {a.patient_name}
-                        </span>
+                  if (item.isGroup) {
+                    return (
+                      <div
+                        key={item.id}
+                        className="absolute flex flex-col gap-1 rounded-lg border border-purple-300 bg-purple-50/95 text-purple-950 px-1.5 py-1 text-left shadow-sm overflow-y-auto"
+                        style={{
+                          top,
+                          height: Math.max(h, ROW_PX * 2.5),
+                          left: layout.left,
+                          width: layout.width,
+                          borderLeftWidth: '4px',
+                          borderLeftColor: '#7c3aed'
+                        }}
+                      >
+                        <div className="flex items-center gap-1 border-b border-purple-200 pb-0.5 mb-0.5 shrink-0">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500 animate-pulse" />
+                          <span className="text-[10px] font-bold uppercase truncate">
+                            {item.appointments.length} Consultas
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1 pr-0.5">
+                          {item.appointments.map((a) => {
+                            const docColor = getDoctorColor(a.doctor_id)
+                            const docName = doctorNameById[a.doctor_id] ?? 'Profissional'
+                            const isCancelled = a.status === 'cancelled'
+                            return (
+                              <button
+                                key={a.id}
+                                type="button"
+                                onClick={() => onSelectAppointment?.(a)}
+                                className={cn(
+                                  "flex flex-col text-left rounded px-1 py-0.5 text-[10px] border border-purple-150 hover:bg-purple-100 transition-colors w-full cursor-pointer",
+                                  isCancelled && 'opacity-60'
+                                )}
+                              >
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span className={cn('h-1 w-1 shrink-0 rounded-full', statusDotClass(a.status))} />
+                                  <span className={cn("font-semibold truncate leading-tight", isCancelled && "line-through")}>
+                                    {a.patient_name}
+                                  </span>
+                                </div>
+                                <span className="text-[8px] font-medium opacity-80 truncate" style={{ color: docColor }}>
+                                  {docName}
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
-                      <span className="truncate text-[10px] opacity-80">{timeRange}</span>
-                      <span className="truncate text-[10px] font-medium opacity-90" style={{ color: docColor }}>
-                        {docName}
-                      </span>
-                    </button>
-                  )
+                    )
+                  } else {
+                    const a = item.appointments[0]
+                    const docName = doctorNameById[a.doctor_id] ?? 'Profissional'
+                    const docColor = getDoctorColor(a.doctor_id)
+                    const isCancelled = a.status === 'cancelled'
+
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => onSelectAppointment?.(a)}
+                        className={cn(
+                          'absolute flex flex-col gap-0.5 rounded-lg border px-1.5 py-1 text-left shadow-sm transition-transform hover:z-10 hover:scale-[1.02] hover:shadow-md',
+                          isCancelled
+                            ? 'bg-slate-300 border-slate-400 text-slate-700 opacity-85'
+                            : 'bg-amber-100/95 border-amber-300 text-amber-950'
+                        )}
+                        style={{
+                          top,
+                          height: Math.max(h, ROW_PX * 1.5),
+                          left: layout.left,
+                          width: layout.width,
+                          borderLeftWidth: '4px',
+                          borderLeftColor: docColor
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5 min-h-0">
+                          <span
+                            className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDotClass(a.status))}
+                          />
+                          <span className={cn('truncate text-[11px] font-semibold leading-tight', isCancelled && 'line-through')}>
+                            {a.patient_name}
+                          </span>
+                        </div>
+                        <span className="truncate text-[10px] opacity-80">{timeRange}</span>
+                        <span className="truncate text-[10px] font-medium opacity-90" style={{ color: docColor }}>
+                          {docName}
+                        </span>
+                      </button>
+                    )
+                  }
                 })}
               </div>
             </div>
