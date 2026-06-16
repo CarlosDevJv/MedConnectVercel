@@ -66,9 +66,9 @@ export function LuziaChat() {
       const payloadAny = payload as any
       const targetUrl = payloadAny?.path || payloadAny?.route || payloadAny?.url || (typeof payload === 'string' ? payload : '')
 
-      toast.info(`Luzia Ação: ${type}`, {
-        description: `Destino: ${targetUrl || 'nenhum'}. Prefill: ${payload?.prefill ? 'sim' : 'não'}`
-      })
+      if (type !== 'NONE') {
+        toast.success('Encaminhado com sucesso')
+      }
 
       if (type === 'NAVIGATE') {
         if (targetUrl) {
