@@ -246,19 +246,19 @@ export function CalendarDayView({
               return (
                 <div
                   key={item.id}
-                  className="absolute flex flex-col gap-1 rounded-lg border border-purple-350 bg-purple-50/95 text-purple-950 px-2 py-1.5 text-left shadow-sm overflow-y-auto"
+                  className="absolute flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-100/95 text-amber-950 px-2 py-1.5 text-left shadow-sm overflow-y-auto"
                   style={{
                     top,
-                    height: Math.max(h, ROW_PX * 2.5),
-                    left: layout.left,
-                    width: layout.width,
+                    height: Math.max(h, 110),
+                    left: '4px',
+                    width: 'calc(100% - 8px)',
                     borderLeftWidth: '4px',
-                    borderLeftColor: '#7c3aed'
+                    borderLeftColor: '#d97706'
                   }}
                 >
-                  <div className="flex items-center gap-1 border-b border-purple-200 pb-1 mb-1 shrink-0">
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-purple-500 animate-pulse" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-1 border-b border-amber-200 pb-1 mb-1 shrink-0">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-amber-600 animate-pulse" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900">
                       {item.appointments.length} Consultas ({formatTimePtBr(start)})
                     </span>
                   </div>
@@ -273,7 +273,7 @@ export function CalendarDayView({
                           type="button"
                           onClick={() => onSelectAppointment?.(a)}
                           className={cn(
-                            "flex items-center justify-between text-left rounded-md px-1.5 py-1 text-[11px] border border-purple-150 hover:bg-purple-100 transition-colors w-full cursor-pointer",
+                            "flex items-center justify-between text-left rounded-md px-1.5 py-1 text-[11px] border border-amber-200 bg-white/70 hover:bg-amber-200/50 transition-colors w-full cursor-pointer text-amber-950",
                             isCancelled && 'opacity-65'
                           )}
                         >

@@ -277,19 +277,19 @@ export function CalendarWeekView({
                     return (
                       <div
                         key={item.id}
-                        className="absolute flex flex-col gap-1 rounded-lg border border-purple-300 bg-purple-50/95 text-purple-950 px-1.5 py-1 text-left shadow-sm overflow-y-auto"
+                        className="absolute flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-100/95 text-amber-950 px-1.5 py-1 text-left shadow-sm overflow-y-auto"
                         style={{
                           top,
-                          height: Math.max(h, ROW_PX * 2.5),
-                          left: layout.left,
-                          width: layout.width,
+                          height: Math.max(h, 110),
+                          left: '4px',
+                          width: 'calc(100% - 8px)',
                           borderLeftWidth: '4px',
-                          borderLeftColor: '#7c3aed'
+                          borderLeftColor: '#d97706'
                         }}
                       >
-                        <div className="flex items-center gap-1 border-b border-purple-200 pb-0.5 mb-0.5 shrink-0">
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500 animate-pulse" />
-                          <span className="text-[10px] font-bold uppercase truncate">
+                        <div className="flex items-center gap-1 border-b border-amber-200 pb-0.5 mb-0.5 shrink-0">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600 animate-pulse" />
+                          <span className="text-[10px] font-bold uppercase truncate text-amber-900">
                             {item.appointments.length} Consultas
                           </span>
                         </div>
@@ -304,7 +304,7 @@ export function CalendarWeekView({
                                 type="button"
                                 onClick={() => onSelectAppointment?.(a)}
                                 className={cn(
-                                  "flex flex-col text-left rounded px-1 py-0.5 text-[10px] border border-purple-150 hover:bg-purple-100 transition-colors w-full cursor-pointer",
+                                  "flex flex-col text-left rounded px-1 py-0.5 text-[10px] border border-amber-200 bg-white/70 hover:bg-amber-200/50 transition-colors w-full cursor-pointer text-amber-950",
                                   isCancelled && 'opacity-60'
                                 )}
                               >
@@ -314,7 +314,7 @@ export function CalendarWeekView({
                                     {a.patient_name}
                                   </span>
                                 </div>
-                                <span className="text-[8px] font-medium opacity-80 truncate" style={{ color: docColor }}>
+                                <span className="text-[8px] font-medium opacity-85 truncate" style={{ color: docColor }}>
                                   {docName}
                                 </span>
                               </button>
