@@ -46,7 +46,7 @@ interface LuziaContextType {
 
 const LuziaContext = React.createContext<LuziaContextType | undefined>(undefined)
 
-const DEFAULT_API_KEY = 'AQ.Ab8RN6KmvvJNfw0LPF5Q5NkikIvCPNLBBhBdt69vWpSf3pCc1g'
+const DEFAULT_API_KEY = ''
 
 function getSystemInstruction(userInfo: any) {
   const roles = userInfo?.roles ?? []
@@ -321,10 +321,6 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
 
       try {
-        if (!apiKey) {
-          throw new Error('Chave de API do Gemini não configurada.')
-        }
-
         // Formata histórico para o formato da API do Gemini (user/model)
         // Ignora a mensagem de boas vindas inicial se for somente informativo
         const apiHistory = messages
@@ -347,43 +343,83 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
 
         const contents = [...apiHistory, activeUserMessage]
 
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents,
-              systemInstruction: {
-                parts: [{ text: getSystemInstruction(userInfo) }],
-              },
-              generationConfig: {
-                responseMimeType: 'application/json',
-                responseSchema: {
+        const isLocal =
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1'
+
+        const localApiKey = import.meta.env.VITE_GEMINI_API_KEY || ''
+
+        const requestBody = {
+          contents,
+          systemInstruction: {
+            parts: [{ text: getSystemInstruction(userInfo) }],
+          },
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                text: { type: 'STRING' },
+                action: {
                   type: 'OBJECT',
                   properties: {
-                    text: { type: 'STRING' },
-                    action: {
-                      type: 'OBJECT',
-                      properties: {
-                        type: { type: 'STRING', enum: ['NAVIGATE', 'LOGOUT', 'SEARCH', 'NONE'] },
-                        path: { type: 'STRING' },
-                        queryParams: { type: 'OBJECT' },
-                        query: { type: 'STRING' },
-                        target: { type: 'STRING' },
-                        prefill: { type: 'OBJECT' }
-                      },
-                      required: ['type']
-                    }
+                    type: { type: 'STRING', enum: ['NAVIGATE', 'LOGOUT', 'SEARCH', 'NONE'] },
+                    path: { type: 'STRING' },
+                    queryParams: { type: 'OBJECT' },
+                    query: { type: 'STRING' },
+                    target: { type: 'STRING' },
+                    prefill: { type: 'OBJECT' }
                   },
-                  required: ['text', 'action']
+                  required: ['type']
                 }
               },
-            }),
+              required: ['text', 'action']
+            }
+          },
+        }
+
+        let response: Response
+
+        if (isLocal && localApiKey) {
+          console.log('[Luzia] Usando chamada direta ao Gemini no ambiente de desenvolvimento local.')
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localApiKey}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestBody),
+            }
+          )
+        } else {
+          console.log('[Luzia] Chamando endpoint seguro /api/luzia.')
+          response = await fetch(
+            `/api/luzia`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestBody),
+            }
+          )
+
+          // Fallback se o endpoint de API der 404 em ambiente de testes/local sem Vercel dev
+          if (response.status === 404 && localApiKey) {
+            console.warn('[Luzia] Endpoint /api/luzia retornou 404. Tentando fallback direto para o Gemini.')
+            response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localApiKey}`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+              }
+            )
           }
-        )
+        }
 
         if (!response.ok) {
           const errData = await response.json().catch(() => ({}))
@@ -443,7 +479,7 @@ export function LuziaProvider({ children }: { children: React.ReactNode }) {
         const errorMessage: LuziaMessage = {
           id: errorMsgId,
           role: 'model',
-          text: `Erro ao falar com a Luzia: ${error?.message || 'Erro desconhecido.'}. Verifique se a sua chave de API está correta nas configurações do chat.`,
+          text: `Erro ao falar com a Luzia: ${error?.message || 'Erro desconhecido.'}. Por favor, tente novamente mais tarde ou entre em contato com o suporte.`,
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, errorMessage])
