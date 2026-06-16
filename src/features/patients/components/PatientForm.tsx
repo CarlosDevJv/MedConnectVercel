@@ -90,6 +90,7 @@ export interface PatientFormHandle {
     field: keyof CreatePatientValues | keyof UpdatePatientValues,
     message: string
   ) => void
+  getPhotoBase64?: () => string | null
 }
 
 type FormValues = CreatePatientValues | UpdatePatientValues
@@ -214,6 +215,34 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
   function PatientForm(props, ref) {
     const isEdit = props.mode === 'edit'
     const [showPassword, setShowPassword] = React.useState(false)
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
+    const [photoBase64, setPhotoBase64] = React.useState<string | null>(() => {
+      if (isEdit && props.patient) {
+        try {
+          return localStorage.getItem(`mediconnect.patient.photo.${props.patient.id}`)
+        } catch {
+          return null
+        }
+      }
+      return null
+    })
+
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoBase64(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+
+    const handleRemovePhoto = () => {
+      setPhotoBase64(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
 
     const {
       register,
@@ -232,10 +261,35 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
       shouldFocusError: true,
     })
 
+    const birthDateVal = useWatch({
+      control,
+      name: 'birth_date',
+    }) as string | undefined
+
+    const isPatientMinor = React.useMemo(() => {
+      if (!birthDateVal) return false
+      const parts = birthDateVal.split('-')
+      if (parts.length !== 3) return false
+      const birthYear = parseInt(parts[0], 10)
+      const birthMonth = parseInt(parts[1], 10) - 1
+      const birthDay = parseInt(parts[2], 10)
+      const birth = new Date(birthYear, birthMonth, birthDay)
+      if (Number.isNaN(birth.getTime())) return false
+
+      const now = new Date()
+      let age = now.getFullYear() - birth.getFullYear()
+      const m = now.getMonth() - birth.getMonth()
+      if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+        age -= 1
+      }
+      return age < 18
+    }, [birthDateVal])
+
     React.useImperativeHandle(ref, () => ({
       setFieldError: (field, message) => {
         setError(field as keyof FormValues, { message })
       },
+      getPhotoBase64: () => photoBase64,
     }))
 
     // Auto-fill address via ViaCEP when the CEP becomes valid.
@@ -314,6 +368,57 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
           id="section-dados"
         >
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-2 md:col-span-2 pb-2 animate-fade-in-up">
+              <Label>Foto de perfil</Label>
+              <div className="flex items-center gap-4">
+                {photoBase64 ? (
+                  <img
+                    src={photoBase64}
+                    alt="Foto do paciente"
+                    className="h-20 w-20 rounded-full object-cover border border-[var(--color-border)] shadow-sm shrink-0"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-xs font-semibold text-[var(--color-accent)] border border-dashed border-[var(--color-border)] shrink-0 select-none">
+                    Sem foto
+                  </div>
+                )}
+                <div className="flex flex-col gap-1.5">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoChange}
+                    accept="image/*"
+                    className="hidden"
+                    id="patient-photo-upload"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Selecionar foto
+                    </Button>
+                    {photoBase64 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemovePhoto}
+                        className="text-[var(--color-destructive)] hover:bg-red-50 hover:text-[var(--color-destructive)]"
+                      >
+                        Remover
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[var(--color-muted-foreground)]">
+                    Formatos suportados: JPG, PNG. Máx. 1MB.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <Field label="Nome" required error={errors.full_name?.message} className="md:col-span-1">
               <Input
                 id="full_name"
@@ -516,11 +621,11 @@ export const PatientForm = React.forwardRef<PatientFormHandle, PatientFormProps>
               <Input id="father_name" {...register('father_name')} />
             </Field>
 
-            <Field label="Nome do responsável" error={errors.guardian_name?.message}>
+            <Field label="Nome do responsável" required={isPatientMinor} error={errors.guardian_name?.message}>
               <Input id="guardian_name" placeholder="Para menores ou dependentes" {...register('guardian_name')} />
             </Field>
 
-            <Field label="CPF do responsável" error={errors.guardian_cpf?.message}>
+            <Field label="CPF do responsável" required={isPatientMinor} error={errors.guardian_cpf?.message}>
               <Controller
                 control={control}
                 name="guardian_cpf"

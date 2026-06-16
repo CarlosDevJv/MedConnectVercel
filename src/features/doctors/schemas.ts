@@ -33,7 +33,7 @@ export const createDoctorSchema = z.object({
       (v) => !v || phoneRegex.test(stripNonDigits(v)),
       'Telefone deve ter 10 ou 11 dígitos'
     ),
-  specialty: z.string().optional(),
+  specialty: z.string().min(1, 'Informe a especialidade'),
   birth_date: z
     .string()
     .optional()
@@ -75,7 +75,7 @@ export const updateDoctorSchema = z.object({
       (v) => !v || phoneRegex.test(stripNonDigits(v)),
       'Telefone deve ter 10 ou 11 dígitos'
     ),
-  specialty: z.string().optional(),
+  specialty: z.string().min(1, 'Informe a especialidade'),
   birth_date: z
     .string()
     .optional()

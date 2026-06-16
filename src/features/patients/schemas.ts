@@ -139,6 +139,52 @@ const baseFullSchema = z.object({
   chronic_conditions: optionalString(),
 })
 
+function isMinor(birthDateStr: string | undefined): boolean {
+  if (!birthDateStr) return false
+  const parts = birthDateStr.split('-')
+  if (parts.length !== 3) return false
+  const birthYear = parseInt(parts[0], 10)
+  const birthMonth = parseInt(parts[1], 10) - 1
+  const birthDay = parseInt(parts[2], 10)
+  
+  const birth = new Date(birthYear, birthMonth, birthDay)
+  if (Number.isNaN(birth.getTime())) return false
+  
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  const m = now.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+    age -= 1
+  }
+  return age < 18
+}
+
+function validateMinorFields(data: any, ctx: z.RefinementCtx) {
+  if (data.birth_date && isMinor(data.birth_date)) {
+    if (!data.guardian_name || !data.guardian_name.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Nome do responsável é obrigatório para menores de idade',
+        path: ['guardian_name'],
+      })
+    }
+    const rawGcpf = stripNonDigits(data.guardian_cpf || '')
+    if (!rawGcpf) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'CPF do responsável é obrigatório para menores de idade',
+        path: ['guardian_cpf'],
+      })
+    } else if (!isValidCpf(rawGcpf)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'CPF do responsável inválido',
+        path: ['guardian_cpf'],
+      })
+    }
+  }
+}
+
 export const createPatientSchema = baseFullSchema
   .extend({
     /** Senha inicial opcional (portal). Envio só no cadastro; preenchimento dispara create-user-with-password + PATCH. */
@@ -152,6 +198,7 @@ export const createPatientSchema = baseFullSchema
         path: ['password'],
       })
     }
+    validateMinorFields(data, ctx)
   })
 export type CreatePatientValues = z.infer<typeof createPatientSchema>
 
@@ -170,6 +217,7 @@ export const updatePatientSchema = baseFullSchema
         path: ['password'],
       })
     }
+    validateMinorFields(data, ctx)
   })
 export type UpdatePatientValues = z.infer<typeof updatePatientSchema>
 

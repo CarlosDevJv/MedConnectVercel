@@ -33,6 +33,7 @@ function getInitials(name: string | null | undefined): string {
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   name?: string | null
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  src?: string | null
 }
 
 const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, string> = {
@@ -43,7 +44,7 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, string> = {
 }
 
 export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ className, name, size = 'md', ...props }, ref) => {
+  ({ className, name, size = 'md', src, ...props }, ref) => {
     const initials = getInitials(name)
     const palette = PALETTE[hashString(name ?? '?') % PALETTE.length]
     return (
@@ -51,15 +52,19 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         ref={ref}
         aria-hidden="true"
         className={cn(
-          'inline-grid shrink-0 place-items-center rounded-full font-display font-medium',
+          'inline-grid shrink-0 place-items-center rounded-full font-display font-medium overflow-hidden',
           SIZE_CLASSES[size],
-          palette.bg,
-          palette.text,
+          src ? 'bg-transparent border border-[var(--color-border)]' : palette.bg,
+          src ? 'text-transparent' : palette.text,
           className
         )}
         {...props}
       >
-        {initials}
+        {src ? (
+          <img src={src} alt={name ?? 'Avatar'} className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
       </div>
     )
   }

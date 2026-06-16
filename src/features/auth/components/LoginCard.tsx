@@ -200,6 +200,16 @@ export function LoginCard() {
               {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
+
+          <div className="mt-5 text-center text-sm text-[var(--color-muted-foreground)] border-t border-[var(--color-border)] pt-4">
+            Não tem uma conta?{' '}
+            <Link
+              to="/cadastro"
+              className="font-semibold text-[var(--color-accent)] hover:underline"
+            >
+              Criar Conta
+            </Link>
+          </div>
         </div>
       </div>
 

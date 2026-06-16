@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, Loader2, FileCheck, Paperclip, Trash2, Mic } from 'lucide-react'
+import { ArrowLeft, Eye, Loader2, FileCheck, Paperclip, Trash2, Mic, Sparkles } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -599,6 +599,93 @@ export function ReportEditorPage() {
   const [previewOpen, setPreviewOpen] = React.useState(false)
   const [previewHtml, setPreviewHtml] = React.useState<string | null>(null)
 
+  const [isGeneratingConclusion, setIsGeneratingConclusion] = React.useState(false)
+
+  const handleSuggestConclusion = async () => {
+    const promptText = `
+Você é a Luzia, assistente inteligente clínica do MediConnect.
+Gere uma Hipótese Diagnóstica / Conclusão clínica estruturada, objetiva, profissional e coerente para o laudo médico de um paciente, com base nas informações fornecidas abaixo.
+Retorne APENAS o texto da conclusão diagnóstica em português, sem rodeios, sem cabeçalhos e sem marcações JSON adicionais.
+
+DADOS DA AVALIAÇÃO DO PACIENTE:
+- Queixa Principal: ${queixa || 'Não informada'}
+- Histórico da Doença Atual (HDA): ${hda || 'Não informado'}
+- Exame Físico: ${exameFisico || 'Não informado'}
+- Exames Complementares: ${examesComp || 'Não informado'}
+- CID Informado: ${cidCode || 'Não informado'}
+`
+
+    setIsGeneratingConclusion(true)
+    try {
+      const localApiKey = localStorage.getItem('mediconnect.luzia.apikey') || ''
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+      const requestBody = {
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: promptText.trim() }],
+          },
+        ],
+      }
+
+      let response: Response
+      if (isLocal && localApiKey) {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+          }
+        )
+      } else {
+        response = await fetch(`/api/luzia`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        })
+
+        if (response.status === 404 && localApiKey) {
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(requestBody),
+            }
+          )
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(`Erro na resposta da IA: ${response.status}`)
+      }
+
+      const result = await response.json()
+      const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      
+      let cleanText = rawText.trim()
+      if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```(?:json|text|html)?\n?/, '')
+        cleanText = cleanText.replace(/\n?```$/, '')
+        cleanText = cleanText.trim()
+      }
+
+      if (cleanText) {
+        setConclusionText(cleanText)
+        toast.success('Sugestão de conclusão gerada!')
+      } else {
+        toast.error('A IA retornou um texto vazio. Tente novamente.')
+      }
+    } catch (err: any) {
+      console.error('[IA Sugestão] Erro:', err)
+      toast.error('Erro ao gerar conclusão com IA. Tente novamente.')
+    } finally {
+      setIsGeneratingConclusion(false)
+    }
+  }
+
   const [editorHtml, setEditorHtml] = React.useState<string | null>(null)
   const [editorJson, setEditorJson] = React.useState<Record<string, unknown> | null>(null)
   const [editorVersion, setEditorVersion] = React.useState(0)
@@ -652,6 +739,16 @@ export function ReportEditorPage() {
       label: `${c.code} - ${c.name}`,
     }))
   }, [cids, cidCode])
+
+  const cidError = React.useMemo(() => {
+    const code = cidCode.trim()
+    if (!code) return null
+    const regex = /^[A-Za-z]\d{2}(\.\d)?$/
+    if (!regex.test(code)) {
+      return 'Formato de CID-10 inválido. Exemplo correto: A00.9 ou B23'
+    }
+    return null
+  }, [cidCode])
 
   const initRef = React.useRef<string | null>(null)
 
@@ -816,6 +913,10 @@ export function ReportEditorPage() {
 
   function save() {
     if (!report) return
+    if (cidError) {
+      toast.error('Não foi possível salvar. Corrija o formato do CID-10.')
+      return
+    }
     updateMutation.mutate(buildPayload(), {
       onSuccess: () => {
         toast.success('Laudo salvo.')
@@ -829,6 +930,10 @@ export function ReportEditorPage() {
 
   function applyDigitalSignature() {
     if (!report) return
+    if (cidError) {
+      toast.error('Não foi possível assinar. Corrija o formato do CID-10.')
+      return
+    }
 
     // 1. Identifica o médico solicitante selecionado no Select de "Solicitante"
     const selectedDoctor = doctors.find((d) => d.full_name === requestedBy)
@@ -1020,6 +1125,9 @@ export function ReportEditorPage() {
             onChange={setCidCode}
             items={allCids}
           />
+          {cidError && (
+            <p className="text-xs text-[var(--color-destructive)]">{cidError}</p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="due">Data</Label>
@@ -1263,19 +1371,44 @@ export function ReportEditorPage() {
             <Label htmlFor="conclusion" className="text-sm font-semibold text-[var(--color-foreground)]">
               Hipótese Diagnóstica / Conclusão
             </Label>
-            <button
-              type="button"
-              onClick={() => toggleVoiceInput('conclusion', setConclusionText)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
-                activeVoiceField === 'conclusion'
-                  ? "bg-red-500 text-white border-red-500 animate-pulse"
-                  : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
-              )}
-            >
-              <Mic className="h-3.5 w-3.5" />
-              {activeVoiceField === 'conclusion' ? 'Gravando...' : 'Gravar por Voz'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isGeneratingConclusion}
+                onClick={handleSuggestConclusion}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                  isGeneratingConclusion
+                    ? "bg-purple-100 text-purple-700 border-purple-200"
+                    : "bg-purple-50 text-purple-600 border-purple-200/50 hover:bg-purple-100 text-purple-700"
+                )}
+              >
+                {isGeneratingConclusion ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Sugerir com IA
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleVoiceInput('conclusion', setConclusionText)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all duration-300",
+                  activeVoiceField === 'conclusion'
+                    ? "bg-red-500 text-white border-red-500 animate-pulse"
+                    : "bg-[var(--color-accent-soft)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent-soft)]/35"
+                )}
+              >
+                <Mic className="h-3.5 w-3.5" />
+                {activeVoiceField === 'conclusion' ? 'Gravando...' : 'Gravar por Voz'}
+              </button>
+            </div>
           </div>
           <textarea
             id="conclusion"

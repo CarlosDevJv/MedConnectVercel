@@ -83,6 +83,14 @@ export function PatientDetailsPage() {
   const fullAddress = formatAddress(patient)
   const bmi = patient.bmi !== null && patient.bmi !== undefined ? patient.bmi : null
 
+  const photoBase64 = React.useMemo(() => {
+    try {
+      return localStorage.getItem(`mediconnect.patient.photo.${patient.id}`)
+    } catch {
+      return null
+    }
+  }, [patient.id])
+
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-6">
       <button
@@ -96,7 +104,7 @@ export function PatientDetailsPage() {
 
       <header className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Avatar name={patient.full_name} size="lg" />
+          <Avatar name={patient.full_name} size="lg" src={photoBase64} />
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl text-[var(--color-foreground)]">

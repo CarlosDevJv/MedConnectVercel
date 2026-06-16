@@ -9,7 +9,16 @@ export const reportInputSchema = z.object({
   status: reportStatusSchema.optional().default('draft'),
   exam: z.string().max(2000).nullable().optional(),
   requested_by: z.string().max(500).nullable().optional(),
-  cid_code: z.string().max(32).nullable().optional(),
+  cid_code: z
+    .string()
+    .max(32)
+    .nullable()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim().toUpperCase() : null))
+    .refine(
+      (v) => !v || /^[A-Z]\d{2}(\.\d)?$/.test(v),
+      'Formato de CID-10 inválido. Exemplo correto: A00.9 ou B23'
+    ),
   diagnosis: z.string().max(10000).nullable().optional(),
   conclusion: z.string().max(10000).nullable().optional(),
   content_html: z.string().max(500_000).nullable().optional(),

@@ -225,11 +225,12 @@ const DoctorCreateFormPlain = React.forwardRef<DoctorFormHandle, CreatePlainProp
             />
           </Field>
 
-          <Field label="Especialidade" error={errors.specialty?.message} className="sm:col-span-2">
+          <Field label="Especialidade" required error={errors.specialty?.message} className="sm:col-span-2">
             <Input
               id="doctor-specialty"
               placeholder="Ex: Cardiologia"
               leftIcon={<Stethoscope className="h-4 w-4" />}
+              invalid={!!errors.specialty}
               {...register('specialty')}
             />
           </Field>
@@ -428,11 +429,12 @@ const DoctorCreateFormWithPassword = React.forwardRef<DoctorFormHandle, CreateWi
             />
           </Field>
 
-          <Field label="Especialidade" error={errors.specialty?.message} className="sm:col-span-2">
+          <Field label="Especialidade" required error={errors.specialty?.message} className="sm:col-span-2">
             <Input
               id="doctor-pw-specialty"
               placeholder="Ex: Cardiologia"
               leftIcon={<Stethoscope className="h-4 w-4" />}
+              invalid={!!errors.specialty}
               {...register('specialty')}
             />
           </Field>
@@ -590,10 +592,11 @@ const DoctorEditForm = React.forwardRef<DoctorFormHandle, EditProps>(
             />
           </Field>
 
-          <Field label="Especialidade" error={errors.specialty?.message} className="sm:col-span-2">
+          <Field label="Especialidade" required error={errors.specialty?.message} className="sm:col-span-2">
             <Input
               id="doctor-specialty"
               leftIcon={<Stethoscope className="h-4 w-4" />}
+              invalid={!!errors.specialty}
               {...register('specialty')}
             />
           </Field>

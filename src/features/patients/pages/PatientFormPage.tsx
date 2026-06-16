@@ -76,14 +76,22 @@ function CreatePatientPage() {
   async function handleSubmit(values: CreatePatientValues) {
     try {
       const response = await createMutation.mutateAsync(values)
+      const patientId = (response as any).patient_id || (response as any).id
+      const photo = formRef.current?.getPhotoBase64?.()
+      if (patientId && photo) {
+        localStorage.setItem(`mediconnect.patient.photo.${patientId}`, photo)
+      } else if (patientId) {
+        localStorage.removeItem(`mediconnect.patient.photo.${patientId}`)
+      }
+
       const withPortal = Boolean(values.password?.trim())
       toast.success(withPortal ? 'Paciente cadastrado com acesso' : 'Paciente cadastrado', {
         description: withPortal
           ? `${values.full_name.trim()} pode entrar com e-mail e senha definidos.`
           : `${values.full_name.trim()} foi adicionado(a) à base.`,
       })
-      if (response.patient_id) {
-        navigate(`/app/pacientes/${response.patient_id}`, { replace: true })
+      if (patientId) {
+        navigate(`/app/pacientes/${patientId}`, { replace: true })
       } else {
         navigate('/app/pacientes', { replace: true })
       }
@@ -123,6 +131,14 @@ function EditPatientPage() {
       const password = values.password?.trim() ?? ''
       const payload = buildUpdatePayload(values)
       const updated = await updateMutation.mutateAsync(payload)
+
+      const photo = formRef.current?.getPhotoBase64?.()
+      if (updated.id && photo) {
+        localStorage.setItem(`mediconnect.patient.photo.${updated.id}`, photo)
+      } else if (updated.id) {
+        localStorage.removeItem(`mediconnect.patient.photo.${updated.id}`)
+      }
+
       if (password && !query.data?.user_id) {
         const phoneDigits = stripNonDigits(values.phone1 ?? '')
         await createUserWithPassword({

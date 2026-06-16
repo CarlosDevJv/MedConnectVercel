@@ -10,6 +10,7 @@ import {
   RequireRole,
 } from '@/features/auth/guards'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { DoctorDetailsPage } from '@/features/doctors/pages/DoctorDetailsPage'
 import { DoctorPasswordCreatePage } from '@/features/doctors/pages/DoctorPasswordCreatePage'
 import { DoctorsListPage } from '@/features/doctors/pages/DoctorsListPage'
@@ -230,7 +231,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/login', element: <LoginPage /> },
-      { path: '/cadastro', element: <Navigate to="/login" replace /> },
+      { path: '/cadastro', element: <RegisterPage /> },
     ],
   },
   {
