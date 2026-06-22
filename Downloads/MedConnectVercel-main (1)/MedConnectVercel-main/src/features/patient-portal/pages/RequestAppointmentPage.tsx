@@ -28,6 +28,21 @@ export function RequestAppointmentPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const patientId = useResolvedPatientId()
+
+  // Early return BEFORE other hooks
+  if (!patientId) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <header className="mb-6">
+          <h1 className="font-display text-2xl text-[var(--color-foreground)]">Solicitar Agendamento</h1>
+          <p className="mt-3 text-sm text-rose-600">
+            Cadastro de paciente não encontrado para esta conta de acesso.
+          </p>
+        </header>
+      </div>
+    )
+  }
+
   const createMut = useCreateAppointmentMutation()
 
   // Buscar todos os médicos ativos
@@ -201,19 +216,6 @@ export function RequestAppointmentPage() {
       console.error(err)
       toast.error('Não foi possível enviar a solicitação de agendamento. Tente novamente mais tarde.')
     }
-  }
-
-  if (!patientId) {
-    return (
-      <div className="mx-auto max-w-2xl">
-        <header className="mb-6">
-          <h1 className="font-display text-2xl text-[var(--color-foreground)]">Solicitar Agendamento</h1>
-          <p className="mt-3 text-sm text-rose-600">
-            Cadastro de paciente não encontrado para esta conta de acesso.
-          </p>
-        </header>
-      </div>
-    )
   }
 
   return (
