@@ -53,16 +53,8 @@ function resolveType(a: PatientPortalAppointment): AppointmentType {
 
 export function MyAppointmentsPage() {
   const patientId = useResolvedPatientId()
-  const query = usePatientPortalAppointmentsQuery(patientId)
 
-  const [detail, setDetail] = React.useState<PatientPortalAppointment | null>(null)
-
-  const sorted = React.useMemo(() => {
-    const list = [...(query.data ?? [])]
-    list.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
-    return list
-  }, [query.data])
-
+  // Early return BEFORE other hooks
   if (!patientId) {
     return (
       <div className="mx-auto max-w-2xl">
@@ -75,6 +67,16 @@ export function MyAppointmentsPage() {
       </div>
     )
   }
+
+  const query = usePatientPortalAppointmentsQuery(patientId)
+
+  const [detail, setDetail] = React.useState<PatientPortalAppointment | null>(null)
+
+  const sorted = React.useMemo(() => {
+    const list = [...(query.data ?? [])]
+    list.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+    return list
+  }, [query.data])
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-6">
