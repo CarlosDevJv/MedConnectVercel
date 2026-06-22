@@ -1,0 +1,63 @@
+import { Check } from 'lucide-react'
+
+export function LandingPricing() {
+  return (
+    <section
+      aria-labelledby="pricing-heading"
+      id="contato"
+      className="scroll-mt-24 border-t border-[var(--color-border)] bg-[var(--color-surface-sidebar)] py-20"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2
+          id="pricing-heading"
+          className="text-center font-display text-3xl font-semibold tracking-tight text-[var(--color-foreground)] sm:text-4xl"
+        >
+          Escolha o plano ideal para você.
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-[var(--color-muted-foreground)]">
+          Planos que acompanham o crescimento da clínica: evolua módulos usuários ou SLA sempre que sua operação exigir.
+        </p>
+
+        <div className="mt-14 flex justify-center">
+          <article className="flex w-full max-w-md flex-col rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-card)]">
+            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-muted-foreground)]">Consultoria</p>
+            <p className="mt-8 text-[2rem] font-bold leading-snug tracking-tight text-[var(--color-accent-ink)] sm:text-[2.35rem]">
+              Fale com um consultor
+            </p>
+            <p className="mt-4 text-[15px] text-[var(--color-muted-foreground)]">
+              Redes com múltiplas unidades integrações sob medida SLA dedicado e projeto de implantação acompanhado de perto.
+              Monte combinações de módulos SLA e onboarding com ajuda direta da equipe comercial MediConnect.
+            </p>
+            <ul className="mt-10 flex flex-1 flex-col gap-3 text-sm text-[var(--color-muted-foreground)]">
+              <li className="flex gap-3">
+                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
+                <span>Contrato personalizado com roadmap combinado</span>
+              </li>
+              <li className="flex gap-3">
+                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
+                <span>Multi-unidade com governança reforçada</span>
+              </li>
+              <li className="flex gap-3">
+                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
+                <span>Treinamentos e suporte priorizado</span>
+              </li>
+              <li className="flex gap-3">
+                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--color-accent-solid)]" aria-hidden />
+                <span>Trilhas de compliance alinhadas ao seu jurídico</span>
+              </li>
+            </ul>
+            <a
+              href="https://wa.me/557996774852"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Abrir conversa no WhatsApp com Consultor MediConnect"
+              className="mt-10 inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-[var(--radius-md)] border-2 border-[var(--color-accent-solid)] px-4 text-center text-base font-semibold text-[var(--color-accent-solid)] transition-colors hover:bg-[var(--color-accent-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-solid)]"
+            >
+              Entrar em contato
+            </a>
+          </article>
+        </div>
+      </div>
+    </section>
+  )
+}
