@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom'
+import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary'
 
 import { AppShell } from '@/app/layouts/AppShell'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
@@ -217,10 +218,13 @@ const appChildren: RouteObject[] = [
   },
 ]
 
+// Componente GlobalErrorBoundary isolado em src/components/GlobalErrorBoundary.tsx
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingPage />,
+    errorElement: <GlobalErrorBoundary />,
   },
   {
     element: (
@@ -228,6 +232,7 @@ export const router = createBrowserRouter([
         <PublicLayout />
       </RedirectIfAuthed>
     ),
+    errorElement: <GlobalErrorBoundary />,
     children: [
       { path: '/login', element: <LoginPage /> },
     ],
@@ -239,6 +244,7 @@ export const router = createBrowserRouter([
         <AppShell />
       </RequireAuth>
     ),
+    errorElement: <GlobalErrorBoundary />,
     children: appChildren,
   },
   {

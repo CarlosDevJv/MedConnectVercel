@@ -28,10 +28,7 @@ export function PatientPortalDashboard() {
 
       {showPatientLinkWarning ? (
         <aside className="rounded-[var(--radius-card)] border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm leading-relaxed text-amber-950">
-          O app já tentou cruzar e‑mail ou CPF (metadados) com seu cadastro, mas não encontramos um paciente que
-          possamos ler aqui ou o servidor bloqueia a consulta — peça à clínica para alinhar o e‑mail do cadastro
-          com sua conta ou retornarem <code className="text-xs">patient.id</code> para o MediConnect resolver o
-          vínculo automaticamente.
+          Não encontramos nenhum paciente vinculado à sua conta. Por favor, entre em contato com a clínica para verificar e atualizar o seu e-mail de cadastro, vinculando sua conta automaticamente.
         </aside>
       ) : null}
 

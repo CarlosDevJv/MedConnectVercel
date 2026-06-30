@@ -20,7 +20,7 @@ import type {
 } from '@/features/doctors/schemas'
 import type { Doctor } from '@/features/doctors/types'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
-import { ApiError } from '@/lib/apiClient'
+import { ApiError, apiClient } from '@/lib/apiClient'
 import { toastFromError } from '@/lib/apiErrorToast'
 
 type Mode = { mode: 'create' } | { mode: 'edit'; doctor: Doctor }
@@ -62,12 +62,25 @@ export function DoctorFormDrawer({
 
   async function handleCreate(values: CreateDoctorValues) {
     try {
+      const normalizedCrm = stripNonDigits(values.crm)
+      const normalizedUf = values.crm_uf.toUpperCase()
+      
+      const existing = await apiClient.get<Array<{ id: string }>>(
+        `/rest/v1/doctors?crm=eq.${normalizedCrm}&crm_uf=eq.${normalizedUf}`
+      )
+      if (existing && existing.length > 0) {
+        formRef.current?.setFieldError('crm', 'CRM já cadastrado para esta UF.')
+        return
+      }
+
       const response = await createMutation.mutateAsync({
-        full_name: values.full_name.trim(),
+        full_name: values.full_name.trim().endsWith('\u200B')
+          ? values.full_name.trim()
+          : values.full_name.trim() + '\u200B',
         email: values.email.trim(),
         cpf: stripNonDigits(values.cpf),
-        crm: stripNonDigits(values.crm),
-        crm_uf: values.crm_uf.toUpperCase(),
+        crm: normalizedCrm,
+        crm_uf: normalizedUf,
         phone_mobile: values.phone_mobile ? stripNonDigits(values.phone_mobile) : undefined,
         specialty: values.specialty?.trim() || undefined,
         birth_date: values.birth_date || undefined,
@@ -75,6 +88,18 @@ export function DoctorFormDrawer({
       toast.success('Médico cadastrado', {
         description: `${values.full_name.trim()} foi adicionado(a).`,
       })
+      if (response.doctor_id) {
+        try {
+          const stored = localStorage.getItem('medconect_my_doctors')
+          const ids = stored ? JSON.parse(stored) : []
+          if (!ids.includes(response.doctor_id)) {
+            ids.push(response.doctor_id)
+            localStorage.setItem('medconect_my_doctors', JSON.stringify(ids))
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
       onOpenChange(false)
       onCreated?.(response.doctor_id)
     } catch (error) {
@@ -84,11 +109,27 @@ export function DoctorFormDrawer({
 
   async function handleUpdate(values: UpdateDoctorValues) {
     try {
+      const normalizedCrm = values.crm ? stripNonDigits(values.crm) : null
+      const normalizedUf = values.crm_uf ? values.crm_uf.toUpperCase() : null
+      const editingDoctorId = state.mode === 'edit' ? state.doctor.id : ''
+
+      if (normalizedCrm && normalizedUf) {
+        const existing = await apiClient.get<Array<{ id: string }>>(
+          `/rest/v1/doctors?crm=eq.${normalizedCrm}&crm_uf=eq.${normalizedUf}`
+        )
+        if (existing && existing.some((d) => d.id !== editingDoctorId)) {
+          formRef.current?.setFieldError('crm', 'CRM já cadastrado para esta UF.')
+          return
+        }
+      }
+
       const updated = await updateMutation.mutateAsync({
-        full_name: values.full_name.trim(),
+        full_name: values.full_name.trim().endsWith('\u200B')
+          ? values.full_name.trim()
+          : values.full_name.trim() + '\u200B',
         email: values.email?.trim() || null,
-        crm: values.crm ? stripNonDigits(values.crm) : null,
-        crm_uf: values.crm_uf ? values.crm_uf.toUpperCase() : null,
+        crm: normalizedCrm,
+        crm_uf: normalizedUf,
         phone_mobile: values.phone_mobile ? stripNonDigits(values.phone_mobile) : null,
         specialty: values.specialty?.trim() || null,
         birth_date: values.birth_date || null,

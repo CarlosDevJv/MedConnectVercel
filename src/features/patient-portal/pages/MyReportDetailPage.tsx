@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { friendlyPortalLoadError } from '@/features/patient-portal/friendlyPortalLoadError'
 import { useResolvedPatientId } from '@/features/patient-portal/hooks'
-import { REPORT_STATUS_LABELS } from '@/features/reports/types'
+
 import { buildReportFallbackHtml } from '@/features/reports/utils/reportPreviewFallbackHtml'
 import { sanitizeReportHtml } from '@/features/reports/utils/sanitizeHtml'
 import { formatDate } from '@/features/patients/utils/format'
@@ -20,6 +20,7 @@ export function MyReportDetailPage() {
   const navigate = useNavigate()
   const patientId = useResolvedPatientId()
   const query = useReport(id)
+  const printRootRef = useRef<HTMLDivElement>(null)
 
   if (!id) {
     return <Navigate to="/app/meus-laudos" replace />
@@ -61,7 +62,10 @@ export function MyReportDetailPage() {
   }
 
   const report = query.data
-  if (report.patient_id !== patientId) {
+  const isSigned = Boolean(report.content_html && report.content_html.includes('Assinado Digitalmente'))
+  const isDraftUnsigned = report.status === 'draft' && !isSigned
+
+  if (report.patient_id !== patientId || isDraftUnsigned) {
     return (
       <div className="mx-auto max-w-2xl py-8">
         <p className="text-sm text-rose-600">Este laudo não está disponível para o seu cadastro.</p>
@@ -74,8 +78,6 @@ export function MyReportDetailPage() {
 
   const rawHtml = report.content_html?.trim() ? report.content_html : buildReportFallbackHtml({ ...report })
   const safe = sanitizeReportHtml(rawHtml)
-
-  const printRootRef = useRef<HTMLDivElement>(null)
 
   function handlePrint() {
     const el = printRootRef.current
@@ -105,7 +107,7 @@ export function MyReportDetailPage() {
       <div ref={printRootRef} id="report-print-root" className="space-y-6">
         <header className="space-y-1 border-b border-[var(--color-border)] pb-6 print:border-gray-300">
           <p className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-            Laudo · {REPORT_STATUS_LABELS[report.status]}
+            Laudo · {report.status === 'completed' || isSigned ? 'Finalizado' : 'Rascunho'}
           </p>
           <h1 className="font-display text-2xl text-[var(--color-foreground)]">
             {report.exam ?? 'Relatório médico'}
@@ -116,34 +118,7 @@ export function MyReportDetailPage() {
           </div>
         </header>
 
-        {(report.diagnosis || report.conclusion || report.cid_code || report.requested_by) && (
-          <dl className="grid gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-sm md:grid-cols-2 print:border-gray-300">
-            {report.requested_by ? (
-              <div className="md:col-span-2">
-                <dt className="text-xs font-medium uppercase text-[var(--color-muted-foreground)]">Solicitante</dt>
-                <dd className="mt-0.5">{report.requested_by}</dd>
-              </div>
-            ) : null}
-            {report.cid_code ? (
-              <div>
-                <dt className="text-xs font-medium uppercase text-[var(--color-muted-foreground)]">CID</dt>
-                <dd className="mt-0.5">{report.cid_code}</dd>
-              </div>
-            ) : null}
-            {report.diagnosis ? (
-              <div className="md:col-span-2">
-                <dt className="text-xs font-medium uppercase text-[var(--color-muted-foreground)]">Diagnóstico</dt>
-                <dd className="mt-0.5 whitespace-pre-wrap">{report.diagnosis}</dd>
-              </div>
-            ) : null}
-            {report.conclusion ? (
-              <div className="md:col-span-2">
-                <dt className="text-xs font-medium uppercase text-[var(--color-muted-foreground)]">Conclusão</dt>
-                <dd className="mt-0.5 whitespace-pre-wrap">{report.conclusion}</dd>
-              </div>
-            ) : null}
-          </dl>
-        )}
+
 
         <div
           className="report-preview-body min-h-[200px] rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-6 text-sm text-[var(--color-foreground)] [&_a]:text-[var(--color-accent)] print:border-gray-300"

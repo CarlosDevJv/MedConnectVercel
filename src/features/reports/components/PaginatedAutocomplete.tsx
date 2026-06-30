@@ -14,6 +14,7 @@ interface PaginatedAutocompleteProps {
   onChange: (val: string) => void
   items: AutocompleteItem[]
   className?: string
+  disabled?: boolean
 }
 
 export function PaginatedAutocomplete({
@@ -23,6 +24,7 @@ export function PaginatedAutocomplete({
   onChange,
   items,
   className,
+  disabled,
 }: PaginatedAutocompleteProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [search, setSearch] = React.useState(value)
@@ -95,12 +97,14 @@ export function PaginatedAutocomplete({
           type="text"
           value={search}
           onChange={handleInputChange}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => !disabled && setIsOpen(true)}
+          disabled={disabled}
           placeholder={placeholder}
           className={cn(
             'h-11 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] pl-10 pr-3.5 text-sm',
             'text-[var(--color-foreground)] outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30',
-            'transition-all duration-200'
+            'transition-all duration-200',
+            disabled && 'opacity-60 cursor-not-allowed bg-[var(--color-muted)]'
           )}
           autoComplete="off"
         />
