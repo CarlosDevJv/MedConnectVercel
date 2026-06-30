@@ -4,14 +4,21 @@
  */
 
 export const LOCALE_PT_BR = 'pt-BR'
+export const TIMEZONE_CLINIC = 'America/Sao_Paulo'
 
 function pad2(n: number): string {
   return String(Math.trunc(n)).padStart(2, '0')
 }
 
-/** Horário local do `Date`, sempre `00–23 : 00–59`. */
+/** Horário local do `Date`, sempre `00–23 : 00–59` no fuso da clínica. */
 export function formatLocalTimeDigits(d: Date): string {
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+  const formatter = new Intl.DateTimeFormat(LOCALE_PT_BR, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: TIMEZONE_CLINIC,
+  })
+  return formatter.format(d)
 }
 
 /** Ex.: `14:30`, `09:05`. */
@@ -29,6 +36,7 @@ export function formatDateTimePtBr(isoOrDate: string | Date): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    timeZone: TIMEZONE_CLINIC,
   })
   return `${datePart} ${formatLocalTimeDigits(d)}`
 }
@@ -37,7 +45,11 @@ export function formatDateTimePtBr(isoOrDate: string | Date): string {
 export function formatDateTimeShortNoYearPtBr(isoOrDate: string | Date): string {
   const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate
   if (Number.isNaN(d.getTime())) return '—'
-  const datePart = d.toLocaleDateString(LOCALE_PT_BR, { day: '2-digit', month: '2-digit' })
+  const datePart = d.toLocaleDateString(LOCALE_PT_BR, {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: TIMEZONE_CLINIC,
+  })
   return `${datePart} ${formatLocalTimeDigits(d)}`
 }
 

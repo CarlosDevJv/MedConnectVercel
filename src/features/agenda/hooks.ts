@@ -30,6 +30,7 @@ import type {
 } from '@/features/agenda/types'
 import { parseISODateLocal, rangeToISOStrings } from '@/features/agenda/utils/calendar'
 import { collectAvailableWeekdaysUnion } from '@/features/agenda/utils/doctorAvailabilityWeekdays'
+import { pgWeekdayToUi } from '@/features/agenda/utils/doctorAvailabilityWeekday'
 import {
   computeDaySlotsFromDoctorAvailability,
   enrichSlotsWithDoctorAvailabilityDuration,
@@ -307,21 +308,48 @@ export function useResolvedAppointmentFormSlots(opts: {
   return React.useMemo(() => {
     const rows = availabilityQuery.data ?? []
     const fromApi = filterSelectableSlots(slotsQuery.data ?? [])
-    const canPreferFallbackAfterApi = slotsQuery.isFetched || slotsQuery.isError
+
 
     let items = fromApi
     let usedFallback = false
 
-    if (fromApi.length === 0 && canPreferFallbackAfterApi && fallbackSlots.length > 0) {
+    if (fallbackSlots.length > 0) {
       items = fallbackSlots
       usedFallback = true
     }
 
     const existing = appointmentsDayQuery.data ?? []
 
-    let filteredItems = items
+    const parseTimeToMinutes = (timeStr: string) => {
+      const parts = timeStr.split(':')
+      const hours = parseInt(parts[0] ?? '0', 10)
+      const minutes = parseInt(parts[1] ?? '0', 10)
+      return hours * 60 + minutes
+    }
+
+    const dow = opts.dateISO ? parseISODateLocal(opts.dateISO).getDay() : null
+
+    let strictlyAvailableItems = items
+    if (opts.dateISO && rows.length > 0) {
+      strictlyAvailableItems = items.filter((slot) => {
+        const activeAvailsForDay = rows.filter((av) => {
+          if (!av.active) return false
+          const avWeekday = pgWeekdayToUi(av.weekday)
+          return avWeekday === dow
+        })
+        
+        return activeAvailsForDay.some((av) => {
+          const startMinutes = parseTimeToMinutes(av.start_time)
+          const endMinutes = parseTimeToMinutes(av.end_time)
+          const apptMinutes = parseTimeToMinutes(slot.time)
+          return apptMinutes >= startMinutes && apptMinutes < endMinutes
+        })
+      })
+    }
+
+    let filteredItems = strictlyAvailableItems
     if (opts.dateISO && existing.length > 0) {
-      filteredItems = items.filter((slot) => {
+      filteredItems = strictlyAvailableItems.filter((slot) => {
         const step = slot.duration_minutes ?? DOCTOR_AVAILABILITY_API_SLOT_DEFAULT
         const blocked = existing.some((appt) =>
           appointmentBlocksSlotCandidate({
@@ -349,6 +377,7 @@ export function useResolvedAppointmentFormSlots(opts: {
       usedAvailabilityFallback: usedFallback,
       slotsQueryError: slotsQuery.error,
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     availabilityQuery.data,
     fallbackSlots,

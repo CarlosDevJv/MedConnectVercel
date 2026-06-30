@@ -19,9 +19,13 @@ import { AppointmentAvailabilityDatePicker } from '@/features/agenda/components/
 import { useCreateAppointmentMutation, useResolvedAppointmentFormSlots } from '@/features/agenda/hooks'
 import { useResolvedPatientId } from '@/features/patient-portal/hooks'
 import { useListDoctors } from '@/features/doctors/hooks'
-import { combineDateAndTime } from '@/features/agenda/utils/calendar'
+import { combineDateAndTime, parseISODateLocal, rangeToISOStrings } from '@/features/agenda/utils/calendar'
 import { DOCTOR_AVAILABILITY_API_SLOT_DEFAULT } from '@/features/agenda/utils/doctorAvailabilityOpenApi'
+import { listAppointments, listDoctorAvailability } from '@/features/agenda/api'
+import { pgWeekdayToUi } from '@/features/agenda/utils/doctorAvailabilityWeekday'
 import { cn } from '@/lib/cn'
+import { useAuth } from '@/features/auth/useAuth'
+import { isMySystemDoctor, cleanDoctorName } from '@/features/doctors/utils/isMySystemDoctor'
 import { formatPostgresLocalTimePtBr } from '@/lib/formatTimePtBr'
 
 export function RequestAppointmentPage() {
@@ -29,6 +33,8 @@ export function RequestAppointmentPage() {
   const [searchParams] = useSearchParams()
   const patientId = useResolvedPatientId()
   const createMut = useCreateAppointmentMutation()
+  const { userInfo } = useAuth()
+  const loggedDoctorId = userInfo?.doctor?.id as string | null | undefined
 
   // Buscar todos os médicos ativos
   const doctorsQuery = useListDoctors({ active: true, pageSize: 200 })
@@ -68,7 +74,7 @@ export function RequestAppointmentPage() {
         )
         if (matchDoc) {
           setSelectedDoctorId(matchDoc.id)
-          setDoctorQuery(matchDoc.full_name)
+          setDoctorQuery(cleanDoctorName(matchDoc.full_name))
           if (matchDoc.specialty) {
             setSelectedSpecialty(matchDoc.specialty)
             setSpecialtyQuery(matchDoc.specialty)
@@ -88,34 +94,52 @@ export function RequestAppointmentPage() {
     }
   }, [searchParams, doctorsQuery.data, doctorsQuery.isLoading])
 
-  // Extrair especialidades únicas de todos os médicos
+  // Extrair especialidades únicas de todos os médicos do nosso sistema
   const specialties = React.useMemo(() => {
     const list = doctorsQuery.data?.items ?? []
     const set = new Set<string>()
     list.forEach((doc) => {
-      if (doc.specialty?.trim()) {
+      if (doc.specialty?.trim() && isMySystemDoctor(doc, loggedDoctorId)) {
         set.add(doc.specialty.trim())
       }
     })
     return Array.from(set).sort()
-  }, [doctorsQuery.data])
+  }, [doctorsQuery.data, loggedDoctorId])
 
   // Filtrar especialidades com base na digitação
   const filteredSpecialties = React.useMemo(() => {
     const q = specialtyQuery.trim().toLowerCase()
     if (!q) return specialties
+
+    const exactMatch = specialties.find((s) => s.toLowerCase() === q)
+    if (exactMatch) return [exactMatch]
+
     return specialties.filter((s) => s.toLowerCase().includes(q))
   }, [specialtyQuery, specialties])
 
-  // Filtrar médicos baseando-se na especialidade e na digitação do nome
+  // Filtrar médicos baseando-se na especialidade e na digitação do nome (filtrando os de fora a menos que a busca seja idêntica)
   const filteredDoctors = React.useMemo(() => {
     const list = doctorsQuery.data?.items ?? []
+    const q = doctorQuery.trim().toLowerCase()
+
     return list.filter((doc) => {
+      if (doc.active === false) return false
+
       const matchSpecialty = !selectedSpecialty || doc.specialty === selectedSpecialty
-      const matchSearch = !doctorQuery.trim() || doc.full_name.toLowerCase().includes(doctorQuery.toLowerCase())
-      return doc.active !== false && matchSpecialty && matchSearch
+      if (!matchSpecialty) return false
+
+      const isMine = isMySystemDoctor(doc, loggedDoctorId)
+      if (!q) {
+        return isMine
+      }
+
+      if (isMine) {
+        return doc.full_name.toLowerCase().includes(q)
+      } else {
+        return doc.full_name.toLowerCase() === q
+      }
     })
-  }, [doctorsQuery.data, selectedSpecialty, doctorQuery])
+  }, [doctorsQuery.data, selectedSpecialty, doctorQuery, loggedDoctorId])
 
 
   // Resolver slots disponíveis para o médico na data
@@ -155,7 +179,7 @@ export function RequestAppointmentPage() {
 
   const handleSelectDoctor = (id: string, name: string) => {
     setSelectedDoctorId(id)
-    setDoctorQuery(name)
+    setDoctorQuery(cleanDoctorName(name))
     setDoctorSuggestionsOpen(false)
   }
 
@@ -179,7 +203,89 @@ export function RequestAppointmentPage() {
       return
     }
 
+    // Validar se o horário está contido em alguma faixa de disponibilidade ativa do médico
+    try {
+      const localDay = parseISODateLocal(date)
+      const weekdayUi = localDay.getDay() // 0-6 (0=Domingo, 6=Sábado)
+      
+      const avails = await listDoctorAvailability({ doctor_id: selectedDoctorId })
+      const activeAvailsForDay = avails.filter((av) => {
+        if (!av.active) return false
+        const avWeekday = pgWeekdayToUi(av.weekday)
+        return avWeekday === weekdayUi
+      })
+
+      if (activeAvailsForDay.length === 0) {
+        toast.error('O médico não possui disponibilidade cadastrada para este dia da semana.')
+        return
+      }
+
+      const parseTimeToMinutes = (timeStr: string) => {
+        const parts = timeStr.split(':')
+        const hours = parseInt(parts[0] ?? '0', 10)
+        const minutes = parseInt(parts[1] ?? '0', 10)
+        return hours * 60 + minutes
+      }
+
+      const apptMinutes = parseTimeToMinutes(time)
+      const isWithinAvailability = activeAvailsForDay.some((av) => {
+        const startMinutes = parseTimeToMinutes(av.start_time)
+        const endMinutes = parseTimeToMinutes(av.end_time)
+        return apptMinutes >= startMinutes && apptMinutes < endMinutes
+      })
+
+      if (!isWithinAvailability) {
+        toast.error('O horário selecionado está fora da faixa de disponibilidade do médico.')
+        return
+      }
+    } catch (e) {
+      console.error('[RequestAppointmentPage] Erro ao validar disponibilidade:', e)
+    }
+
     const scheduled_at = combineDateAndTime(date, time)
+
+    // Validar colisões de agendamento
+    try {
+      const localDay = parseISODateLocal(date)
+      const { from: scheduledFrom, to: scheduledTo } = rangeToISOStrings(localDay, localDay)
+      
+      // 1. Validar se o paciente já tem outro agendamento no mesmo dia e horário
+      const existingPatientAppts = await listAppointments({
+        patient_id: patientId,
+        scheduledFrom,
+        scheduledTo,
+      })
+      const patientCollision = existingPatientAppts.find((appt) => {
+        if (appt.status === 'cancelled') return false
+        return new Date(appt.scheduled_at).getTime() === new Date(scheduled_at).getTime()
+      })
+      if (patientCollision) {
+        toast.error(
+          `Você já tem outro atendimento solicitado ou confirmado nesse dia e horário.`
+        )
+        return
+      }
+
+      // 2. Validar se o médico já tem outro agendamento no mesmo dia e horário
+      const existingDoctorAppts = await listAppointments({
+        doctorIds: [selectedDoctorId],
+        scheduledFrom,
+        scheduledTo,
+      })
+      const doctorCollision = existingDoctorAppts.find((appt) => {
+        if (appt.status === 'cancelled') return false
+        return new Date(appt.scheduled_at).getTime() === new Date(scheduled_at).getTime()
+      })
+      if (doctorCollision) {
+        toast.error(
+          `O médico selecionado já possui um atendimento nesse dia e horário. Por favor, escolha outro horário.`
+        )
+        return
+      }
+    } catch (e) {
+      console.error('Erro ao verificar colisão de agendamento:', e)
+    }
+
     const matchedSlot = slotItems.find((s) => s.time === time)
     const duration = matchedSlot?.duration_minutes ?? DOCTOR_AVAILABILITY_API_SLOT_DEFAULT
 
@@ -347,12 +453,12 @@ export function RequestAppointmentPage() {
                         "flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-[var(--color-accent-soft)]/50 transition-colors",
                         selectedDoctorId === doc.id && "bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-medium"
                       )}
-                      onMouseDown={() => handleSelectDoctor(doc.id, doc.full_name)}
+                      onMouseDown={() => handleSelectDoctor(doc.id, cleanDoctorName(doc.full_name))}
                     >
                       <span className="flex items-center gap-2">
                         <User className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                         <div>
-                          <p className="font-medium text-[var(--color-foreground)]">{doc.full_name}</p>
+                          <p className="font-medium text-[var(--color-foreground)]">{cleanDoctorName(doc.full_name)}</p>
                           <p className="text-xs text-[var(--color-muted-foreground)]">{doc.specialty || 'Clínico Geral'}</p>
                         </div>
                       </span>

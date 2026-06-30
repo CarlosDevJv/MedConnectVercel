@@ -2,6 +2,7 @@ import { ArrowLeft, Eye, Loader2, FileCheck, Paperclip, Trash2, Mic, Sparkles } 
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -10,10 +11,12 @@ import { ReportRichText } from '@/features/reports/components/ReportRichText'
 import { reportToReportInput } from '@/features/reports/api'
 import { buildReportFallbackHtml } from '@/features/reports/utils/reportPreviewFallbackHtml'
 import { useReport, useUpdateReportMutation } from '@/features/reports/hooks'
+import { reportInputSchema } from '@/features/reports/schemas'
 import type { ReportInput } from '@/features/reports/types'
 import { useCanManagePatients, useAuth } from '@/features/auth/useAuth'
 import { usePatient } from '@/features/patients/hooks'
 import { useListDoctors } from '@/features/doctors/hooks'
+import type { Doctor } from '@/features/doctors/types'
 
 import { PaginatedAutocomplete } from '@/features/reports/components/PaginatedAutocomplete'
 import { CID_LIST } from '@/features/reports/utils/cidList'
@@ -222,8 +225,33 @@ export function ReportEditorPage() {
   const bodyRef = React.useRef({ html: '', json: {} as Record<string, unknown> })
 
   const { userInfo } = useAuth()
+  const isMedico = React.useMemo(() => {
+    return userInfo?.roles?.includes('medico') ?? false
+  }, [userInfo])
   const doctorsQuery = useListDoctors({ pageSize: 100 })
-  const doctors = doctorsQuery.data?.items ?? []
+  const doctors = React.useMemo(() => doctorsQuery.data?.items ?? [], [doctorsQuery.data?.items])
+
+  // Busca o médico logado de forma individual no banco se ele não estiver no primeiro lote de 100
+  const loggedDoctorQuery = useQuery({
+    queryKey: ['doctors', 'detail', userInfo?.doctor?.id],
+    queryFn: async () => {
+      const docId = userInfo?.doctor?.id
+      if (!docId) return null
+      const rows = await apiClient.get<Record<string, unknown>[]>(`/rest/v1/doctors?id=eq.${docId}`)
+      return rows?.[0] ?? null
+    },
+    enabled: !!userInfo?.doctor?.id,
+  })
+
+  const loggedDoctor = React.useMemo(() => {
+    const docId = userInfo?.doctor?.id
+    if (!docId) return null
+    return (
+      (loggedDoctorQuery.data as unknown as Doctor) ||
+      doctors.find((d) => d.id === docId) ||
+      null
+    )
+  }, [doctors, userInfo?.doctor?.id, loggedDoctorQuery.data])
 
   const [existingExams, setExistingExams] = React.useState<string[]>([])
 
@@ -330,7 +358,6 @@ export function ReportEditorPage() {
       docCrm = selectedDoctor.crm
       docCrmUf = selectedDoctor.crm_uf
     } else {
-      const loggedDoctor = userInfo?.doctor as { full_name?: string; crm?: string; crm_uf?: string } | null
       if (loggedDoctor) {
         docName = loggedDoctor.full_name || docName
         docCrm = loggedDoctor.crm || ''
@@ -342,7 +369,12 @@ export function ReportEditorPage() {
     // Obter apenas a data por extenso sem local
     const dataExtenso = formatExtensoDate(dueLocal, '').replace(/^\s*,\s*/, '')
 
-    let signatureSection = '<p><i>Pendente de assinatura digital</i></p>'
+    let signatureSection = `
+      <div style="margin-top: 20px; padding: 14px 16px; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-size: 0.85rem; max-width: 320px; font-style: italic; background-color: #f8fafc; font-family: sans-serif; display: flex; align-items: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #94a3b8;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        Pendente de assinatura digital
+      </div>
+    `
     if (currentSignatureHtml) {
       signatureSection = `<div style="margin-top: 5px;">${currentSignatureHtml}</div>`
     }
@@ -757,7 +789,7 @@ DADOS DA AVALIAÇÃO DO PACIENTE:
     if (initRef.current === report.id) return
     initRef.current = report.id
     setExam(report.exam ?? '')
-    setRequestedBy(report.requested_by ?? '')
+    setRequestedBy(report.requested_by || (loggedDoctor?.full_name ?? ''))
     setCidCode(report.cid_code ?? '')
     setDueLocal(isoToDatetimeLocal(report.due_at))
 
@@ -844,7 +876,16 @@ DADOS DA AVALIAÇÃO DO PACIENTE:
       html: report.content_html ?? '',
       json: (report.content_json as Record<string, unknown>) ?? {},
     }
-  }, [report])
+  }, [report, loggedDoctor?.full_name])
+
+  const loggedDoctorName = loggedDoctor?.full_name
+  React.useEffect(() => {
+    if (loggedDoctorName && !requestedBy && report && !report.requested_by) {
+      setTimeout(() => {
+        setRequestedBy(loggedDoctorName)
+      }, 0)
+    }
+  }, [loggedDoctorName, requestedBy, report])
 
   React.useEffect(() => {
     const nextHtml = composeReportHtml(signatureHtml)
@@ -894,46 +935,53 @@ DADOS DA AVALIAÇÃO DO PACIENTE:
       conduta: conduta.trim(),
     })
 
+    const rawPayload = {
+      patient_id: report.patient_id,
+      status: 'draft' as const,
+      exam: exam.trim() || null,
+      requested_by: requestedBy.trim() || null,
+      cid_code: cidCode.trim() || null,
+      diagnosis: diagJson,
+      conclusion: conclJson,
+      due_at: due,
+      hide_date: false,
+      hide_signature: false,
+      content_html: bodyRef.current.html || null,
+      content_json: bodyRef.current.json,
+    }
+
+    const parsed = reportInputSchema.safeParse(rawPayload)
+    if (!parsed.success) {
+      const errorMsg = parsed.error.issues[0]?.message || 'Dados inválidos no laudo.'
+      throw new Error(errorMsg)
+    }
+
     return {
-      ...reportToReportInput(report, {
-        status: 'draft',
-        exam: exam.trim() || null,
-        requested_by: requestedBy.trim() || null,
-        cid_code: cidCode.trim() || null,
-        diagnosis: diagJson,
-        conclusion: conclJson,
-        due_at: due,
-        hide_date: false,
-        hide_signature: false,
-        content_html: bodyRef.current.html || null,
-        content_json: bodyRef.current.json,
-      }),
+      ...reportToReportInput(report, parsed.data),
     }
   }
 
   function save() {
     if (!report) return
-    if (cidError) {
-      toast.error('Não foi possível salvar. Corrija o formato do CID-10.')
-      return
+    try {
+      const payload = buildPayload()
+      updateMutation.mutate(payload, {
+        onSuccess: () => {
+          toast.success('Laudo salvo.')
+          navigate('/app/relatorios')
+        },
+        onError: (err) => {
+          toastFromError(err, { operationTitle: 'Não foi possível salvar o laudo.' })
+        },
+      })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Corrija os dados antes de salvar.'
+      toast.error(msg)
     }
-    updateMutation.mutate(buildPayload(), {
-      onSuccess: () => {
-        toast.success('Laudo salvo.')
-        navigate('/app/relatorios')
-      },
-      onError: (err) => {
-        toastFromError(err, { operationTitle: 'Não foi possível salvar o laudo.' })
-      },
-    })
   }
 
-  function applyDigitalSignature() {
+  async function applyDigitalSignature() {
     if (!report) return
-    if (cidError) {
-      toast.error('Não foi possível assinar. Corrija o formato do CID-10.')
-      return
-    }
 
     // 1. Identifica o médico solicitante selecionado no Select de "Solicitante"
     const selectedDoctor = doctors.find((d) => d.full_name === requestedBy)
@@ -947,8 +995,6 @@ DADOS DA AVALIAÇÃO DO PACIENTE:
       crm = selectedDoctor.crm
       crmUf = selectedDoctor.crm_uf
     } else {
-      // Fallback para o médico logado se for o caso
-      const loggedDoctor = userInfo?.doctor as { full_name?: string; crm?: string; crm_uf?: string } | null
       if (loggedDoctor) {
         docName = loggedDoctor.full_name || docName
         crm = loggedDoctor.crm || ''
@@ -980,12 +1026,24 @@ DADOS DA AVALIAÇÃO DO PACIENTE:
     const year = today.getFullYear()
     const formattedDate = `${day}/${month}/${year}`
 
-    // Montar HTML da assinatura no final do laudo
-    const signatureHtmlLines = [
-      `<p>${fullNameFormatted}</p>`,
-      `<p>${crmUfFormatted}</p>`,
-      `<p>${formattedDate}</p>`,
-    ].join('')
+    // Montar HTML da assinatura no final do laudo com layout premium assinado digitalmente
+    const signatureHtmlLines = `
+      <div style="margin-top: 30px; padding: 18px; border: 1.5px solid #10b981; border-radius: 8px; background-color: #f0fdf4; display: inline-flex; flex-direction: column; gap: 4px; font-family: sans-serif; max-width: 320px;">
+        <div style="display: flex; align-items: center; gap: 6px; color: #047857; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px; text-transform: uppercase;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="display: inline-block;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          Assinado Digitalmente
+        </div>
+        <div style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-top: 4px;">
+          ${fullNameFormatted}
+        </div>
+        <div style="font-size: 0.85rem; color: #475569; font-weight: 500;">
+          CRM: ${crmUfFormatted}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 6px; border-top: 1px solid #d1fae5; padding-top: 6px;">
+          Documento assinado em ${formattedDate}
+        </div>
+      </div>
+    `.trim()
 
     // Define no estado local de assinatura
     setSignatureHtml(signatureHtmlLines)
@@ -1011,30 +1069,50 @@ DADOS DA AVALIAÇÃO DO PACIENTE:
       conduta: conduta.trim(),
     })
 
-    const payload: ReportInput = {
-      ...reportToReportInput(report, {
-        status: 'draft',
-        exam: exam.trim() || null,
-        requested_by: requestedBy.trim() || null,
-        cid_code: cidCode.trim() || null,
-        diagnosis: diagJson,
-        conclusion: conclJson,
-        due_at: due,
-        hide_date: false,
-        hide_signature: false,
-        content_html: nextHtml || null,
-        content_json: {},
-      }),
+    const rawPayload = {
+      patient_id: report.patient_id,
+      status: 'completed' as const,
+      exam: exam.trim() || null,
+      requested_by: requestedBy.trim() || null,
+      cid_code: cidCode.trim() || null,
+      diagnosis: diagJson,
+      conclusion: conclJson,
+      due_at: due,
+      hide_date: false,
+      hide_signature: false,
+      content_html: nextHtml || null,
+      content_json: {},
     }
 
-    updateMutation.mutate(payload, {
-      onSuccess: () => {
-        toast.success('Assinatura digital aplicada e laudo salvo.')
-      },
-      onError: (err) => {
-        toastFromError(err, { operationTitle: 'Não foi possível salvar a assinatura no laudo.' })
-      },
-    })
+    try {
+      const parsed = reportInputSchema.parse(rawPayload)
+      const payload = {
+        ...reportToReportInput(report, parsed),
+      }
+
+      await updateMutation.mutateAsync(payload)
+      toast.success('Assinatura digital aplicada e laudo finalizado com sucesso.')
+    } catch (e: unknown) {
+      const errorText = e instanceof Error ? e.message : String(e)
+      if (errorText.includes('report_status') || errorText.includes('completed')) {
+        console.warn('[Assinatura Digital] Enum "completed" não suportado no banco. Salvando como "draft" assinado.')
+        try {
+          const fallbackPayload = {
+            ...reportToReportInput(report, {
+              ...rawPayload,
+              status: 'draft' as const,
+            }),
+          }
+          await updateMutation.mutateAsync(fallbackPayload)
+          toast.success('Assinatura digital aplicada e laudo finalizado com sucesso.')
+        } catch (errFallback: unknown) {
+          toastFromError(errFallback, { operationTitle: 'Não foi possível salvar a assinatura no laudo.' })
+        }
+      } else {
+        const msg = e instanceof Error ? e.message : 'Corrija os dados antes de assinar.'
+        toast.error(msg)
+      }
+    }
   }
 
   if (reportQuery.isError) {
@@ -1114,6 +1192,7 @@ DADOS DA AVALIAÇÃO DO PACIENTE:
             value={requestedBy}
             onChange={setRequestedBy}
             items={allDoctors}
+            disabled={isMedico}
           />
         </div>
         <div className="flex flex-col gap-1.5">

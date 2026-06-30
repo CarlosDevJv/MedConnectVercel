@@ -10,7 +10,7 @@ import {
 import { useCreateDoctor } from '@/features/doctors/hooks'
 import type { CreateDoctorValues, CreateDoctorWithPasswordValues } from '@/features/doctors/schemas'
 import { stripNonDigits } from '@/features/patients/utils/cpf'
-import { ApiError } from '@/lib/apiClient'
+import { ApiError, apiClient } from '@/lib/apiClient'
 import { toastFromError } from '@/lib/apiErrorToast'
 
 export function DoctorPasswordCreatePage() {
@@ -22,12 +22,25 @@ export function DoctorPasswordCreatePage() {
 
   async function handleSubmit(values: CreateDoctorWithPasswordValues) {
     try {
+      const normalizedCrm = stripNonDigits(values.crm)
+      const normalizedUf = values.crm_uf.toUpperCase()
+      
+      const existing = await apiClient.get<Array<{ id: string }>>(
+        `/rest/v1/doctors?crm=eq.${normalizedCrm}&crm_uf=eq.${normalizedUf}`
+      )
+      if (existing && existing.length > 0) {
+        formRef.current?.setFieldError('crm', 'CRM já cadastrado para esta UF.')
+        return
+      }
+
       const response = await createMutation.mutateAsync({
-        full_name: values.full_name.trim(),
+        full_name: values.full_name.trim().endsWith('\u200B')
+          ? values.full_name.trim()
+          : values.full_name.trim() + '\u200B',
         email: values.email.trim(),
         cpf: stripNonDigits(values.cpf),
-        crm: stripNonDigits(values.crm),
-        crm_uf: values.crm_uf.toUpperCase(),
+        crm: normalizedCrm,
+        crm_uf: normalizedUf,
         password: values.password,
         phone_mobile: values.phone_mobile ? stripNonDigits(values.phone_mobile) : undefined,
         specialty: values.specialty?.trim() || undefined,
@@ -36,6 +49,18 @@ export function DoctorPasswordCreatePage() {
       toast.success('Médico cadastrado com senha', {
         description: `${values.full_name.trim()} já pode entrar na plataforma.`,
       })
+      if (response.doctor_id) {
+        try {
+          const stored = localStorage.getItem('medconect_my_doctors')
+          const ids = stored ? JSON.parse(stored) : []
+          if (!ids.includes(response.doctor_id)) {
+            ids.push(response.doctor_id)
+            localStorage.setItem('medconect_my_doctors', JSON.stringify(ids))
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
       if (response.doctor_id) {
         navigate(`/app/medicos/${response.doctor_id}`, { replace: true })
       } else {
@@ -63,11 +88,7 @@ export function DoctorPasswordCreatePage() {
         </p>
         <h1 className="font-display text-2xl text-[var(--color-foreground)]">Novo médico</h1>
         <p className="max-w-[640px] text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-          Cadastro com senha inicial e dados de CRM. O convite usa{' '}
-          <code className="rounded-md bg-[var(--color-muted)] px-1 font-mono text-xs">
-            POST /functions/v1/create-user-with-password
-          </code>{' '}
-          com <span className="font-mono text-xs">role=medico</span> (e-mail auto-confirmado).
+          Preencha os dados abaixo com o CRM e a senha inicial do médico. O e-mail cadastrado será utilizado para acessar a plataforma.
         </p>
       </header>
 

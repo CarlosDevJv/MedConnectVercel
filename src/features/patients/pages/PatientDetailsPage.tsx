@@ -55,6 +55,33 @@ export function PatientDetailsPage() {
   const query = usePatient(id)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
 
+  const patient = query.data
+
+  // Compartilha dados do paciente atual com a assistente virtual Luzia
+  useLuziaPageContext(
+    patient
+      ? {
+          tela: 'Ficha de Paciente',
+          paciente_id: patient.id,
+          nome_paciente: patient.full_name,
+          cpf: patient.cpf,
+          alergias: patient.allergies || 'Nenhuma alergia cadastrada',
+          convenio: patient.insurance_company || 'Particular',
+          tipo_sanguineo: patient.blood_type || 'Não informado',
+          observacoes: patient.notes || 'Nenhuma observação',
+        }
+      : {}
+  )
+
+  const photoBase64 = React.useMemo(() => {
+    if (!patient?.id) return null
+    try {
+      return localStorage.getItem(`mediconnect.patient.photo.${patient.id}`)
+    } catch {
+      return null
+    }
+  }, [patient])
+
   if (query.isLoading) return <DetailsSkeleton />
 
   if (query.isError) {
@@ -62,34 +89,13 @@ export function PatientDetailsPage() {
     return isNotFound ? <NotFoundState /> : <ErrorState onRetry={() => query.refetch()} />
   }
 
-  const patient = query.data
   if (!patient) return <NotFoundState />
-
-  // Compartilha dados do paciente atual com a assistente virtual Luzia
-  useLuziaPageContext({
-    tela: 'Ficha de Paciente',
-    paciente_id: patient.id,
-    nome_paciente: patient.full_name,
-    cpf: patient.cpf,
-    alergias: patient.allergies || 'Nenhuma alergia cadastrada',
-    convenio: patient.insurance_company || 'Particular',
-    tipo_sanguineo: patient.blood_type || 'Não informado',
-    observacoes: patient.notes || 'Nenhuma observação',
-  })
 
   const cityState =
     [patient.city, patient.state].filter(Boolean).join('/') || '—'
 
   const fullAddress = formatAddress(patient)
   const bmi = patient.bmi !== null && patient.bmi !== undefined ? patient.bmi : null
-
-  const photoBase64 = React.useMemo(() => {
-    try {
-      return localStorage.getItem(`mediconnect.patient.photo.${patient.id}`)
-    } catch {
-      return null
-    }
-  }, [patient.id])
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-6">

@@ -29,11 +29,12 @@ import {
 } from '@/features/agenda/hooks'
 import type { AppointmentType, ScheduleIntent } from '@/features/agenda/types'
 import { SCHEDULE_INTENT_LABELS } from '@/features/agenda/types'
-import { combineDateAndTime } from '@/features/agenda/utils/calendar'
+import { combineDateAndTime, parseISODateLocal, rangeToISOStrings } from '@/features/agenda/utils/calendar'
 import { DOCTOR_AVAILABILITY_API_SLOT_DEFAULT } from '@/features/agenda/utils/doctorAvailabilityOpenApi'
 import type { Doctor } from '@/features/doctors/types'
 import { listPatients } from '@/features/patients/api'
-import { listAppointments } from '@/features/agenda/api'
+import { listAppointments, listDoctorAvailability } from '@/features/agenda/api'
+import { pgWeekdayToUi } from '@/features/agenda/utils/doctorAvailabilityWeekday'
 import { ApiError } from '@/lib/apiClient'
 import { toastFromError } from '@/lib/apiErrorToast'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
@@ -226,31 +227,87 @@ export function NewAppointmentSheet({
       return
     }
 
+    // Validar se o horário está contido em alguma faixa de disponibilidade ativa do médico
+    try {
+      const localDay = parseISODateLocal(values.date)
+      const weekdayUi = localDay.getDay() // 0-6 (0=Domingo, 6=Sábado)
+      
+      const avails = await listDoctorAvailability({ doctor_id: values.doctor_id })
+      const activeAvailsForDay = avails.filter((av) => {
+        if (!av.active) return false
+        const avWeekday = pgWeekdayToUi(av.weekday)
+        return avWeekday === weekdayUi
+      })
+
+      if (activeAvailsForDay.length === 0) {
+        toast.error('O profissional não possui disponibilidade cadastrada para este dia da semana.')
+        return
+      }
+
+      const parseTimeToMinutes = (timeStr: string) => {
+        const parts = timeStr.split(':')
+        const hours = parseInt(parts[0] ?? '0', 10)
+        const minutes = parseInt(parts[1] ?? '0', 10)
+        return hours * 60 + minutes
+      }
+
+      const apptMinutes = parseTimeToMinutes(values.time)
+      const isWithinAvailability = activeAvailsForDay.some((av) => {
+        const startMinutes = parseTimeToMinutes(av.start_time)
+        const endMinutes = parseTimeToMinutes(av.end_time)
+        return apptMinutes >= startMinutes && apptMinutes < endMinutes
+      })
+
+      if (!isWithinAvailability) {
+        toast.error('O horário selecionado está fora da faixa de disponibilidade do profissional.')
+        return
+      }
+    } catch (e) {
+      console.error('[NewAppointmentSheet] Erro ao validar disponibilidade:', e)
+    }
+
     const scheduled_at = combineDateAndTime(values.date, values.time)
 
-    // Validar se o paciente já tem outro agendamento no mesmo dia e horário
+    // Validar colisões de agendamento
     try {
-      const scheduledFrom = `${values.date}T00:00:00`
-      const scheduledTo = `${values.date}T23:59:59`
-      const existing = await listAppointments({
+      const localDay = parseISODateLocal(values.date)
+      const { from: scheduledFrom, to: scheduledTo } = rangeToISOStrings(localDay, localDay)
+      
+      // 1. Validar se o paciente já tem outro agendamento no mesmo dia e horário
+      const existingPatientAppts = await listAppointments({
         patient_id: values.patient_id,
         scheduledFrom,
         scheduledTo,
       })
-      const collision = existing.find((appt) => {
+      const patientCollision = existingPatientAppts.find((appt) => {
         if (appt.status === 'cancelled') return false
-        const d1 = new Date(appt.scheduled_at).getTime()
-        const d2 = new Date(scheduled_at).getTime()
-        return d1 === d2
+        return new Date(appt.scheduled_at).getTime() === new Date(scheduled_at).getTime()
       })
-      if (collision) {
+      if (patientCollision) {
         toast.error(
-          `O paciente em questão já tem outro atendimento nesse dia e horário. Por favor, selecione outro horário disponível na lista ou escolha outro dia.`
+          `O paciente selecionado já tem outro atendimento nesse dia e horário.`
+        )
+        return
+      }
+
+      // 2. Validar se o médico já tem outro agendamento no mesmo dia e horário
+      const existingDoctorAppts = await listAppointments({
+        doctorIds: [values.doctor_id],
+        scheduledFrom,
+        scheduledTo,
+      })
+      const doctorCollision = existingDoctorAppts.find((appt) => {
+        if (appt.status === 'cancelled') return false
+        return new Date(appt.scheduled_at).getTime() === new Date(scheduled_at).getTime()
+      })
+      if (doctorCollision) {
+        toast.error(
+          `O médico selecionado já possui um atendimento nesse dia e horário.`
         )
         return
       }
     } catch (e) {
-      console.error('Erro ao verificar colisão de agendamento para o paciente:', e)
+      console.error('Erro ao verificar colisão de agendamento:', e)
     }
 
     const slot = slotItems.find((s) => s.time === values.time)
